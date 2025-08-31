@@ -222,30 +222,60 @@ class TechnicalIndicatorsCalculator:
             typical_price = (high + low + close) / 3
             money_flow = typical_price * volume
             
-            positive_flow = np.where(typical_price > np.roll(typical_price, 1), money_flow, 0)
-            negative_flow = np.where(typical_price < np.roll(typical_price, 1), money_flow, 0)
+            # Handle first element (no previous price)
+            tp_diff = np.diff(typical_price)
+            positive_flow = np.zeros_like(money_flow)
+            negative_flow = np.zeros_like(money_flow)
             
-            positive_flow_sum = pd.Series(positive_flow).rolling(window=14).sum()
-            negative_flow_sum = pd.Series(negative_flow).rolling(window=14).sum()
+            positive_flow[1:] = np.where(tp_diff > 0, money_flow[1:], 0)
+            negative_flow[1:] = np.where(tp_diff < 0, money_flow[1:], 0)
             
-            # Avoid division by zero
-            money_flow_ratio = positive_flow_sum / (negative_flow_sum + 1e-8)
-            indicators_data['MFI'] = 100 - (100 / (1 + money_flow_ratio))
+            positive_flow_sum = pd.Series(positive_flow).rolling(window=14, min_periods=1).sum()
+            negative_flow_sum = pd.Series(negative_flow).rolling(window=14, min_periods=1).sum()
+            
+            # Robust division by zero handling
+            mfi_values = np.full_like(close, 50.0)  # Default to 50 when no direction
+            valid_mask = (negative_flow_sum > 0)
+            
+            money_flow_ratio = positive_flow_sum / negative_flow_sum
+            mfi_values[valid_mask] = 100 - (100 / (1 + money_flow_ratio[valid_mask]))
+            
+            # Handle edge cases
+            mfi_values = np.clip(mfi_values, 0, 100)
+            indicators_data['MFI'] = mfi_values
             
             # Ultimate Oscillator (simplified)
             bp = close - np.minimum(low, np.roll(close, 1))
             tr_uo = np.maximum(high, np.roll(close, 1)) - np.minimum(low, np.roll(close, 1))
             
-            # Avoid division by zero
-            tr_sum_7 = pd.Series(tr_uo).rolling(7).sum()
-            tr_sum_14 = pd.Series(tr_uo).rolling(14).sum()
-            tr_sum_28 = pd.Series(tr_uo).rolling(28).sum()
+            # Handle first element
+            bp[0] = 0
+            tr_uo[0] = high[0] - low[0] if high[0] != low[0] else 1.0
             
-            avg7 = pd.Series(bp).rolling(7).sum() / (tr_sum_7 + 1e-8)
-            avg14 = pd.Series(bp).rolling(14).sum() / (tr_sum_14 + 1e-8)
-            avg28 = pd.Series(bp).rolling(28).sum() / (tr_sum_28 + 1e-8)
+            # Calculate rolling sums with minimum periods
+            tr_sum_7 = pd.Series(tr_uo).rolling(7, min_periods=1).sum()
+            tr_sum_14 = pd.Series(tr_uo).rolling(14, min_periods=1).sum()
+            tr_sum_28 = pd.Series(tr_uo).rolling(28, min_periods=1).sum()
             
-            indicators_data['ULTOSC'] = 100 * (4 * avg7 + 2 * avg14 + avg28) / 7
+            bp_sum_7 = pd.Series(bp).rolling(7, min_periods=1).sum()
+            bp_sum_14 = pd.Series(bp).rolling(14, min_periods=1).sum()
+            bp_sum_28 = pd.Series(bp).rolling(28, min_periods=1).sum()
+            
+            # Robust division with proper handling of zero denominators
+            avg7 = np.full_like(close, 0.5)  # Default neutral value
+            avg14 = np.full_like(close, 0.5)
+            avg28 = np.full_like(close, 0.5)
+            
+            mask7 = tr_sum_7 > 0
+            mask14 = tr_sum_14 > 0
+            mask28 = tr_sum_28 > 0
+            
+            avg7[mask7] = bp_sum_7[mask7] / tr_sum_7[mask7]
+            avg14[mask14] = bp_sum_14[mask14] / tr_sum_14[mask14]
+            avg28[mask28] = bp_sum_28[mask28] / tr_sum_28[mask28]
+            
+            ultosc_values = 100 * (4 * avg7 + 2 * avg14 + avg28) / 7
+            indicators_data['ULTOSC'] = np.clip(ultosc_values, 0, 100)
             
             # Absolute Price Oscillator
             ema_fast = self.calculate_ema(close, 12)
@@ -267,13 +297,26 @@ class TechnicalIndicatorsCalculator:
             indicators_data['CMO'] = np.concatenate([[np.nan], cmo.values])
             
             # Stochastic RSI
-            rsi_values = indicators_data['RSI']
-            rsi_low = pd.Series(rsi_values).rolling(window=14).min()
-            rsi_high = pd.Series(rsi_values).rolling(window=14).max()
+            rsi_values = indicators_data['RSI'].copy()
+            
+            # Handle NaN values in RSI first
+            rsi_values = pd.Series(rsi_values).fillna(50).values  # Fill NaN with neutral RSI
+            
+            rsi_low = pd.Series(rsi_values).rolling(window=14, min_periods=1).min()
+            rsi_high = pd.Series(rsi_values).rolling(window=14, min_periods=1).max()
             rsi_range = rsi_high - rsi_low
-            # Avoid division by zero
-            stoch_rsi = (rsi_values - rsi_low) / (rsi_range + 1e-8)
-            indicators_data['STOCHRSI'] = stoch_rsi * 100
+            
+            # Initialize with neutral values
+            stoch_rsi = np.full_like(rsi_values, 50.0)
+            
+            # Only calculate when we have a valid range
+            valid_mask = (rsi_range > 0)
+            stoch_rsi[valid_mask] = ((rsi_values[valid_mask] - rsi_low[valid_mask]) / 
+                                   rsi_range[valid_mask]) * 100
+            
+            # Ensure values are within bounds
+            stoch_rsi = np.clip(stoch_rsi, 0, 100)
+            indicators_data['STOCHRSI'] = stoch_rsi
             
             # Log Return
             indicators_data['LOG_RETURN'] = np.log(close / np.roll(close, 1))
@@ -369,16 +412,32 @@ class TechnicalIndicatorsCalculator:
                 issues.append("Contains infinite values")
                 is_valid = False
             
-            # Check for excessive NaN values (more than 50%)
+            # Check for excessive NaN values (more than 20% for better threshold)
             nan_percentage = indicators_df[indicator].isna().mean()
-            if nan_percentage > 0.5:
+            if nan_percentage > 0.2:
                 issues.append(f"High NaN percentage: {nan_percentage:.2%}")
                 is_valid = False
+            
+            # Check for constant values (might indicate calculation issues)
+            if is_valid:
+                non_nan_values = indicators_df[indicator].dropna()
+                if len(non_nan_values) > 1 and non_nan_values.nunique() == 1:
+                    issues.append("All non-NaN values are identical")
+                    # Don't mark as invalid, but warn
+            
+            # Check for reasonable value ranges for specific indicators
+            if is_valid and indicator in ['RSI', 'STOCHRSI', 'MFI', 'ULTOSC']:
+                values = indicators_df[indicator].dropna()
+                if len(values) > 0:
+                    if values.min() < -1 or values.max() > 101:
+                        issues.append(f"Values outside expected range [0,100]: [{values.min():.2f}, {values.max():.2f}]")
             
             validation_results[indicator] = {
                 'is_valid': is_valid,
                 'issues': issues,
-                'nan_percentage': nan_percentage
+                'nan_percentage': nan_percentage,
+                'min_value': indicators_df[indicator].min() if not indicators_df[indicator].isna().all() else np.nan,
+                'max_value': indicators_df[indicator].max() if not indicators_df[indicator].isna().all() else np.nan
             }
             
             if issues:

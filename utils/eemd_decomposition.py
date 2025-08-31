@@ -36,20 +36,32 @@ logger = logging.getLogger(__name__)
 
 class EEMDDecomposer:
     """
-    Implements Ensemble Empirical Mode Decomposition for noise reduction
+    Enhanced Ensemble Empirical Mode Decomposition for noise reduction (PMC10963254)
     """
     
     def __init__(self, trials: int = None, noise_width: float = None):
         """
-        Initialize EEMD decomposer
+        Initialize enhanced EEMD decomposer with improved parameters
         
         Args:
-            trials: Number of trials for ensemble
-            noise_width: Standard deviation of Gaussian noise
+            trials: Number of trials for ensemble (increased for better averaging)
+            noise_width: Standard deviation of Gaussian noise (optimized)
         """
         self.trials = trials or EEMD_CONFIG['trials']
         self.noise_width = noise_width or EEMD_CONFIG['noise_width']
-        self.eemd = EEMD(trials=self.trials, noise_width=self.noise_width)
+        
+        # Enhanced EEMD configuration
+        if PYEMD_AVAILABLE:
+            self.eemd = EEMD(
+                trials=self.trials, 
+                noise_width=self.noise_width,
+                ext_EMD=EEMD_CONFIG.get('ext_EMD'),
+                parallel=True  # Enable parallel processing for faster computation
+            )
+        else:
+            self.eemd = EEMD(trials=self.trials, noise_width=self.noise_width)
+        
+        logger.info(f"EEMD initialized with {self.trials} trials and noise width {self.noise_width}")
         
     def calculate_sample_entropy(self, data: np.ndarray, m: int = 2, r: float = None) -> float:
         """
