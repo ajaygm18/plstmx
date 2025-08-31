@@ -54,9 +54,9 @@ CAE_CONFIG = {
     'batch_size': 32
 }
 
-# EEMD Configuration - Maximized for optimal signal decomposition and maximum accuracy
+# EEMD Configuration - Optimized for maximum accuracy with 200 trials
 EEMD_CONFIG = {
-    'trials': 500,  # Increased from 200 for maximum ensemble averaging
+    'trials': 200,  # Optimized for balance between quality and performance
     'noise_width': 0.10,  # Further reduced from 0.15 for highest precision decomposition
     'ext_EMD': None,
     'n_imfs': None,  # Let algorithm determine optimal number of IMFs
