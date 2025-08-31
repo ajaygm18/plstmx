@@ -7,6 +7,29 @@ import sys
 import os
 from types import ModuleType
 
+# Check if real dependencies are available
+def check_real_dependencies():
+    """Check if real dependencies are available and skip mocks if they are"""
+    real_deps_available = True
+    
+    try:
+        import tensorflow
+        import numpy  
+        import pandas
+        import sklearn
+        import yfinance
+        from PyEMD import EEMD
+        print("✅ Real dependencies detected - skipping mock initialization")
+        return True
+    except ImportError as e:
+        print(f"⚠️  Missing dependencies, loading mocks: {e}")
+        return False
+
+# Only install mocks if real dependencies are not available
+if check_real_dependencies():
+    # Real dependencies available, exit early
+    sys.exit(0)
+
 class MockArray:
     def __init__(self, data=None, shape=None):
         if data is not None:

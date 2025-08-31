@@ -113,8 +113,12 @@ class TechnicalIndicatorsCalculator:
             change = np.abs(np.diff(close, 10))
             volatility = pd.Series(np.abs(np.diff(close))).rolling(window=10).sum()
             efficiency_ratio = change / volatility[9:]
+            
+            # For KAMA, we'll use a simplified approach with fixed alpha
+            # In practice, KAMA would use the efficiency ratio to adjust smoothing
+            kama_alpha = 0.2  # Simplified approach
             indicators_data['KAMA'] = np.concatenate([np.full(10, np.nan), 
-                                                     pd.Series(close[10:]).ewm(alpha=efficiency_ratio).mean().values])
+                                                     pd.Series(close[10:]).ewm(alpha=kama_alpha).mean().values])
             
             # MAMA (simplified)
             indicators_data['MAMA'] = self.calculate_ema(close, 5)
@@ -271,7 +275,7 @@ class TechnicalIndicatorsCalculator:
             indicators_df = pd.DataFrame(indicators_data, index=data.index)
             
             # Handle NaN values by forward filling and then backward filling
-            indicators_df = indicators_df.fillna(method='ffill').fillna(method='bfill')
+            indicators_df = indicators_df.ffill().bfill()
             
             logger.info(f"Calculated {len(indicators_df.columns)} technical indicators")
             return indicators_df

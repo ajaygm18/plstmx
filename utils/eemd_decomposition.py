@@ -21,7 +21,7 @@ except ImportError:
     PYEMD_AVAILABLE = False
     
     class EEMD:
-        def __init__(self, trials=100, noise_width=0.2):
+        def __init__(self, trials=50, noise_width=0.2):
             self.trials = trials
             self.noise_width = noise_width
         
@@ -68,6 +68,10 @@ class EEMDDecomposer:
         
         N = len(data)
         
+        # Quick validation
+        if N < 10 or r == 0:
+            return np.inf
+        
         def _maxdist(xi, xj, m):
             return max([abs(ua - va) for ua, va in zip(xi, xj)])
         
@@ -77,16 +81,28 @@ class EEMDDecomposer:
             
             for i in range(N - m + 1):
                 template_i = x[i]
+                matches = 0
                 for j in range(N - m + 1):
-                    if i != j:
-                        if _maxdist(template_i, x[j], m) <= r:
-                            C[i] += 1.0
+                    if i != j and _maxdist(template_i, x[j], m) <= r:
+                        matches += 1
+                C[i] = matches
             
-            phi = np.mean(np.log(C / (N - m)))
+            # Avoid log(0) by filtering
+            C_nonzero = C[C > 0]
+            if len(C_nonzero) == 0:
+                return -np.inf
+                
+            phi = np.mean(np.log(C_nonzero / (N - m)))
             return phi
         
         try:
-            return _phi(m) - _phi(m + 1)
+            phi_m = _phi(m)
+            phi_m1 = _phi(m + 1)
+            
+            if np.isfinite(phi_m) and np.isfinite(phi_m1):
+                return phi_m - phi_m1
+            else:
+                return np.inf
         except:
             return np.inf  # Return infinity if calculation fails
     
@@ -109,7 +125,7 @@ class EEMDDecomposer:
             # Remove any NaN or infinite values
             if np.any(np.isnan(data)) or np.any(np.isinf(data)):
                 logger.warning("Found NaN or infinite values, interpolating...")
-                data = pd.Series(data).interpolate().fillna(method='bfill').fillna(method='ffill').values
+                data = pd.Series(data).interpolate().bfill().ffill().values
             
             # Perform EEMD decomposition
             imfs = self.eemd(data)
