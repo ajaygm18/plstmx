@@ -11,6 +11,10 @@ import os
 from datetime import datetime
 from typing import Dict, Any
 
+# Configure GPU settings BEFORE any TensorFlow imports
+from utils.gpu_config import ensure_gpu_configured
+ensure_gpu_configured()
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,

@@ -10,6 +10,14 @@ import os
 import time
 from typing import Tuple, Dict, Optional
 
+# Configure GPU settings before TensorFlow import
+try:
+    from utils.gpu_config import ensure_gpu_configured
+    ensure_gpu_configured()
+except ImportError:
+    # gpu_config module not available, skip GPU configuration
+    pass
+
 # Try to import TensorFlow, use fallback if not available
 try:
     import tensorflow as tf

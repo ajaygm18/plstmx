@@ -3,6 +3,10 @@ Main Streamlit application for PLSTM-TAL Stock Market Prediction
 Implementation of research paper PMC10963254
 """
 
+# Configure GPU settings BEFORE any TensorFlow imports
+from utils.gpu_config import ensure_gpu_configured
+ensure_gpu_configured()
+
 import streamlit as st
 import pandas as pd
 import numpy as np
