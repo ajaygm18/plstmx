@@ -11,6 +11,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import logging
 import os
+import time
 from datetime import datetime
 
 # Import custom modules
@@ -199,8 +200,8 @@ def show_model_training():
         st.warning("⚠️ Please process data first in the Data Processing section.")
         return
     
-    # Training configuration
-    st.subheader("Training Configuration")
+    # Enhanced Training Configuration for PMC10963254
+    st.subheader("Extended Training Configuration")
     
     col1, col2 = st.columns(2)
     
@@ -211,19 +212,67 @@ def show_model_training():
             default=list(st.session_state.processed_data.keys())
         )
         
-        use_bayesian_opt = st.checkbox("Use Bayesian Optimization", value=True)
+        use_bayesian_opt = st.checkbox("Use Enhanced Bayesian Optimization", value=True,
+            help="Uses 200+ optimization calls for thorough hyperparameter search")
+        
+        extended_training = st.checkbox("Enable Extended Training", value=True,
+            help="Enables extended training with target accuracy of 70%+")
         
     with col2:
-        epochs = st.slider("Training Epochs", 10, 200, PLSTM_CONFIG['epochs'])
+        # Enhanced training parameters
+        if extended_training:
+            epochs = st.slider("Training Epochs (Extended)", 200, 500, 300,
+                help="Extended training epochs for better accuracy")
+            bayesian_calls = st.slider("Bayesian Optimization Calls", 100, 300, 200,
+                help="More calls = better hyperparameter optimization")
+        else:
+            epochs = st.slider("Training Epochs", 10, 200, PLSTM_CONFIG['epochs'])
+            bayesian_calls = 50
+            
         batch_size = st.selectbox("Batch Size", [16, 32, 64, 128], index=1)
+    
+    # Extended training options
+    if extended_training:
+        st.subheader("🎯 Extended Training Options")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            target_accuracy = st.slider("Target Accuracy", 0.6, 0.95, 0.70, 0.01,
+                help="Training will aim to achieve this accuracy (70%+ as per PMC10963254)")
+            
+        with col2:
+            early_stopping_patience = st.slider("Early Stopping Patience", 30, 100, 50,
+                help="Epochs to wait for improvement before stopping")
+                
+        with col3:
+            enable_checkpoints = st.checkbox("Enable Checkpoints", value=True,
+                help="Save model checkpoints during training")
+        
+        # Show estimated training time
+        estimated_time = epochs * bayesian_calls * 0.5 / 60  # Rough estimate in minutes
+        st.info(f"⏱️ Estimated training time: {estimated_time:.1f} minutes "
+                f"(Timeouts disabled for extended training)")
+        
+        st.warning(f"🎯 **Target**: Achieve {target_accuracy:.1%} accuracy as per PMC10963254 research paper")
     
     # Training controls
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("🚀 Start Training", use_container_width=True):
+        if st.button("🚀 Start Enhanced Training", use_container_width=True):
             if selected_indices:
-                start_training(selected_indices, epochs, batch_size, use_bayesian_opt)
+                training_config = {
+                    'epochs': epochs,
+                    'batch_size': batch_size,
+                    'use_bayesian_opt': use_bayesian_opt,
+                    'bayesian_calls': bayesian_calls if use_bayesian_opt else None,
+                    'extended_training': extended_training,
+                    'target_accuracy': target_accuracy if extended_training else 0.7,
+                    'patience': early_stopping_patience if extended_training else 15,
+                    'enable_checkpoints': enable_checkpoints if extended_training else False
+                }
+                start_training(selected_indices, training_config)
             else:
                 st.error("Please select at least one index to train.")
     
@@ -236,39 +285,85 @@ def show_model_training():
         if st.button("📊 View Progress", use_container_width=True):
             show_training_progress()
     
-    # Display training status
+    with col2:
+        if st.button("⏹️ Stop Training", use_container_width=True):
+            st.session_state.stop_training = True
+            st.warning("Training stop requested...")
+    
+    with col3:
+        if st.button("📊 View Progress", use_container_width=True):
+            show_training_progress()
+    
+    # Enhanced display of training status
     if 'training_status' in st.session_state:
-        st.subheader("Training Status")
+        st.subheader("📊 Enhanced Training Status")
         
         for index_name, status in st.session_state.training_status.items():
-            with st.expander(f"📈 {index_name} Training"):
+            with st.expander(f"📈 {index_name} Training Results"):
                 if status.get('completed', False):
-                    st.success(f"✅ Training completed!")
+                    # Enhanced completion status
+                    target_achieved = status.get('target_achieved', False)
+                    extended_training = status.get('extended_training', False)
+                    training_time = status.get('training_time', 0)
+                    
+                    if target_achieved:
+                        st.success(f"🎯 SUCCESS: Target accuracy achieved!")
+                    else:
+                        st.warning(f"⚠️ Target accuracy not achieved")
+                    
+                    if extended_training:
+                        st.info(f"⚡ Extended training completed in {training_time:.1f}s")
+                    else:
+                        st.info(f"⏱️ Standard training completed in {training_time:.1f}s")
                     
                     metrics = status.get('final_metrics', {})
-                    col1, col2, col3, col4 = st.columns(4)
+                    target_acc = status.get('target_accuracy', 0.7)
+                    
+                    col1, col2, col3, col4, col5 = st.columns(5)
                     
                     with col1:
-                        st.metric("Accuracy", f"{metrics.get('accuracy', 0):.4f}")
+                        accuracy = metrics.get('accuracy', 0)
+                        delta_color = "normal" if accuracy >= target_acc else "inverse"
+                        st.metric("Accuracy", f"{accuracy:.4f}", 
+                                delta=f"Target: {target_acc:.1%}", delta_color=delta_color)
                     with col2:
                         st.metric("Precision", f"{metrics.get('precision', 0):.4f}")
                     with col3:
                         st.metric("Recall", f"{metrics.get('recall', 0):.4f}")
                     with col4:
                         st.metric("F1-Score", f"{metrics.get('f1_score', 0):.4f}")
+                    with col5:
+                        auc_score = metrics.get('auc_roc', 0)
+                        st.metric("AUC-ROC", f"{auc_score:.4f}")
                 
                 elif status.get('training', False):
-                    st.info(f"🔄 Training in progress...")
-                    if 'current_epoch' in status:
-                        progress = status['current_epoch'] / status.get('total_epochs', 1)
-                        st.progress(progress)
-                        st.write(f"Epoch {status['current_epoch']}/{status.get('total_epochs', 1)}")
+                    st.info(f"🔄 Enhanced training in progress...")
+                    
+                    # Enhanced progress information
+                    current_epoch = status.get('current_epoch', 0)
+                    total_epochs = status.get('total_epochs', 1)
+                    target_acc = status.get('target_accuracy', 0.7)
+                    extended = status.get('extended_training', False)
+                    bayesian = status.get('bayesian_optimization', False)
+                    
+                    progress = current_epoch / total_epochs
+                    st.progress(progress)
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write(f"Epoch {current_epoch}/{total_epochs}")
+                        st.write(f"🎯 Target: {target_acc:.1%}")
+                    with col2:
+                        if extended:
+                            st.write("⚡ Extended Training")
+                        if bayesian:
+                            st.write("🔧 Bayesian Optimization")
                 
                 else:
-                    st.info("⏳ Waiting to start...")
+                    st.info("⏳ Waiting to start enhanced training...")
 
-def start_training(selected_indices, epochs, batch_size, use_bayesian_opt):
-    """Start the training process for selected indices"""
+def start_training(selected_indices, training_config):
+    """Start enhanced training process for selected indices with PMC10963254 configuration"""
     
     st.session_state.training_status = {}
     st.session_state.trained_models = {}
@@ -278,26 +373,61 @@ def start_training(selected_indices, epochs, batch_size, use_bayesian_opt):
     status_placeholder = st.empty()
     
     try:
+        from config.settings import EXTENDED_TRAINING_CONFIG
+        
+        # Enhanced trainer initialization
         trainer = PLSTMTALTrainer()
+        
+        # Extract training configuration
+        epochs = training_config['epochs']
+        batch_size = training_config['batch_size']
+        use_bayesian_opt = training_config['use_bayesian_opt']
+        bayesian_calls = training_config.get('bayesian_calls', 200)
+        extended_training = training_config.get('extended_training', True)
+        target_accuracy = training_config.get('target_accuracy', 0.7)
+        patience = training_config.get('patience', 50)
+        enable_checkpoints = training_config.get('enable_checkpoints', True)
+        
+        status_placeholder.info(f"🎯 Starting enhanced training with target accuracy: {target_accuracy:.1%}")
+        
+        if extended_training:
+            status_placeholder.info(f"⚡ Extended training enabled: {epochs} epochs, "
+                                  f"{bayesian_calls if use_bayesian_opt else 'no'} Bayesian calls")
         
         for i, index_name in enumerate(selected_indices):
             if st.session_state.get('stop_training', False):
                 break
             
             progress_placeholder.progress((i) / len(selected_indices))
-            status_placeholder.info(f"🔄 Training {index_name}...")
+            status_placeholder.info(f"🔄 Training {index_name} with enhanced configuration...")
             
-            # Update status
+            # Update status with enhanced information
             st.session_state.training_status[index_name] = {
                 'training': True,
                 'current_epoch': 0,
-                'total_epochs': epochs
+                'total_epochs': epochs,
+                'target_accuracy': target_accuracy,
+                'extended_training': extended_training,
+                'bayesian_optimization': use_bayesian_opt,
+                'start_time': time.time()
             }
             
             # Get processed data for this index
             data = st.session_state.processed_data[index_name]
             
-            # Train model
+            # Enhanced training configuration
+            enhanced_config = {
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'target_accuracy': target_accuracy,
+                'patience': patience,
+                'enable_checkpoints': enable_checkpoints
+            }
+            
+            if use_bayesian_opt:
+                enhanced_config['n_calls'] = bayesian_calls
+            
+            # Train model with enhanced configuration
             model, history, best_params, benchmark_results = trainer.train_complete_pipeline(
                 index_name=index_name,
                 X_train=data['X_train'],
@@ -307,31 +437,59 @@ def start_training(selected_indices, epochs, batch_size, use_bayesian_opt):
                 X_test=data['X_test'],
                 y_test=data['y_test'],
                 use_bayesian_opt=use_bayesian_opt,
-                epochs=epochs,
-                batch_size=batch_size
+                **enhanced_config
             )
             
-            # Store results
+            # Store enhanced results
+            training_time = time.time() - st.session_state.training_status[index_name]['start_time']
+            
             st.session_state.trained_models[index_name] = {
                 'model': model,
                 'history': history,
                 'best_params': best_params,
-                'benchmark_results': benchmark_results
+                'benchmark_results': benchmark_results,
+                'training_config': enhanced_config,
+                'training_time': training_time
             }
             
-            # Update status
+            # Evaluate model and check if target was achieved
             final_metrics = trainer.evaluate_model(model, data['X_test'], data['y_test'])
+            target_achieved = final_metrics.get('accuracy', 0) >= target_accuracy
+            
+            # Update status with enhanced information
             st.session_state.training_status[index_name] = {
                 'completed': True,
-                'final_metrics': final_metrics
+                'final_metrics': final_metrics,
+                'target_achieved': target_achieved,
+                'training_time': training_time,
+                'extended_training': extended_training
             }
+            
+            # Show achievement status
+            if target_achieved:
+                status_placeholder.success(f"🎯 {index_name}: Target accuracy {target_accuracy:.1%} achieved! "
+                                         f"Final accuracy: {final_metrics.get('accuracy', 0):.4f}")
+            else:
+                status_placeholder.warning(f"⚠️ {index_name}: Target accuracy not achieved. "
+                                         f"Final accuracy: {final_metrics.get('accuracy', 0):.4f}")
         
         progress_placeholder.progress(1.0)
-        status_placeholder.success("✅ Training completed for all selected indices!")
+        
+        # Final summary
+        total_indices = len(selected_indices)
+        successful_indices = sum(1 for status in st.session_state.training_status.values() 
+                               if status.get('target_achieved', False))
+        
+        if successful_indices == total_indices:
+            status_placeholder.success(f"🎉 SUCCESS! All {total_indices} indices achieved target accuracy!")
+        elif successful_indices > 0:
+            status_placeholder.info(f"✅ {successful_indices}/{total_indices} indices achieved target accuracy")
+        else:
+            status_placeholder.warning(f"⚠️ No indices achieved target accuracy. Consider extended training.")
         
     except Exception as e:
-        status_placeholder.error(f"❌ Training failed: {str(e)}")
-        logger.error(f"Training error: {str(e)}")
+        status_placeholder.error(f"❌ Enhanced training failed: {str(e)}")
+        logger.error(f"Enhanced training error: {str(e)}")
 
 def show_training_progress():
     """Show detailed training progress"""
