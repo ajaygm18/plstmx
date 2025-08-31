@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Complete Model Training Script - PMC10963254 Implementation
-Runs the Full Enhanced Bayesian Optimization and Extended Training phases with all features enabled
-and all timeouts removed to achieve 70%+ accuracy target and save all results in project folder
+Runs the Full Enhanced Bayesian Optimization and Extended Training phases with MAXIMUM ACCURACY
+optimization using unlimited resources and all timeouts removed to achieve 80%+ accuracy target 
+and save all results in project folder
 """
 
 import os
@@ -23,8 +24,9 @@ logger = logging.getLogger(__name__)
 def run_complete_training():
     """Run complete training and save all models and results"""
     
-    logger.info("🚀 Starting Complete Model Training for PMC10963254")
-    logger.info("=" * 80)
+    logger.info("🚀 Starting Complete Model Training for PMC10963254 - MAXIMUM ACCURACY OPTIMIZATION")
+    logger.info("🎯 Target: 80%+ accuracy with unlimited resources and exhaustive optimization")
+    logger.info("⚡ Configuration: 1000 epochs, 500 Bayesian calls, 500 EEMD trials")
     
     try:
         # Import modules
@@ -56,17 +58,23 @@ def run_complete_training():
                 
             logger.info(f"🔄 Training PLSTM-TAL model for {index_name}...")
             
-            # Enhanced training configuration - Full execution with all features
+            # Maximum accuracy training configuration - Optimized for 80%+ accuracy
             training_config = {
-                'epochs': EXTENDED_TRAINING_CONFIG.get('epochs', 300),  # Full extended training
+                'epochs': EXTENDED_TRAINING_CONFIG.get('epochs', 1000),  # Maximum training epochs
                 'batch_size': 32,
-                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],
-                'patience': EXTENDED_TRAINING_CONFIG.get('accuracy_patience', 100),  # Full patience for extended training
-                'enable_checkpoints': True
+                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],  # 80% target
+                'patience': EXTENDED_TRAINING_CONFIG.get('accuracy_patience', 200),  # Extended patience for higher accuracy
+                'enable_checkpoints': True,
+                'enable_advanced_optimization': True,  # Enable all advanced optimization techniques
+                'use_cosine_annealing': EXTENDED_TRAINING_CONFIG.get('cosine_annealing', True),
+                'use_warm_restarts': EXTENDED_TRAINING_CONFIG.get('warm_restarts', True),
+                'use_cyclic_lr': EXTENDED_TRAINING_CONFIG.get('cyclic_learning_rate', True),
+                'enable_ensemble': EXTENDED_TRAINING_CONFIG.get('ensemble_training', True),
+                'enable_data_augmentation': EXTENDED_TRAINING_CONFIG.get('data_augmentation', True)
             }
             
             try:
-                # Train model with full Bayesian optimization
+                # Train model with maximum Bayesian optimization for highest accuracy
                 model, history, best_params, benchmark_results = trainer.train_complete_pipeline(
                     index_name=index_name,
                     X_train=data['X_train'],
@@ -76,7 +84,7 @@ def run_complete_training():
                     X_test=data['X_test'],
                     y_test=data['y_test'],
                     use_bayesian_opt=True,
-                    n_calls=BAYESIAN_OPT_CONFIG.get('n_calls', 200),  # Full Bayesian optimization
+                    n_calls=BAYESIAN_OPT_CONFIG.get('n_calls', 500),  # Maximum Bayesian optimization
                     **training_config
                 )
                 
@@ -139,7 +147,9 @@ def run_complete_training():
         # Step 4: Generate comprehensive results summary with detailed accuracy results
         summary = {
             'timestamp': datetime.now().isoformat(),
-            'execution_mode': 'full_execution_all_features_enabled',
+            'execution_mode': 'maximum_accuracy_optimization_unlimited_resources',
+            'optimization_level': 'maximum',
+            'resource_constraints': 'none',
             'total_indices_processed': len([r for r in training_results.values() if 'error' not in r]),
             'successful_trainings': len([r for r in training_results.values() if r.get('target_achieved', False)]),
             'accuracy_results': {},  # Detailed accuracy tracking
@@ -147,8 +157,11 @@ def run_complete_training():
             'configuration': {
                 'extended_training': EXTENDED_TRAINING_CONFIG,
                 'bayesian_optimization': BAYESIAN_OPT_CONFIG,
+                'eemd_config': EEMD_CONFIG,
                 'timeouts_disabled': True,
-                'all_features_enabled': True
+                'all_features_enabled': True,
+                'maximum_accuracy_mode': True,
+                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy']
             }
         }
         
@@ -186,15 +199,19 @@ def run_complete_training():
         accuracy_results_path = os.path.join(results_dir, "accuracy_results.json")
         accuracy_only_summary = {
             'timestamp': datetime.now().isoformat(),
-            'execution_mode': 'full_execution_all_features_enabled',
+            'execution_mode': 'maximum_accuracy_optimization_unlimited_resources',
+            'optimization_level': 'maximum',
             'accuracy_results': summary['accuracy_results'],
             'overall_stats': summary.get('overall_accuracy_stats', {}),
             'configuration_summary': {
-                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],
-                'epochs_used': EXTENDED_TRAINING_CONFIG['epochs'],
-                'bayesian_calls': BAYESIAN_OPT_CONFIG['n_calls'],
+                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],  # 80% target
+                'epochs_used': EXTENDED_TRAINING_CONFIG['epochs'],  # 1000 epochs
+                'bayesian_calls': BAYESIAN_OPT_CONFIG['n_calls'],  # 500 calls
+                'eemd_trials': EEMD_CONFIG['trials'],  # 500 trials
                 'timeouts_disabled': True,
-                'all_features_enabled': True
+                'all_features_enabled': True,
+                'maximum_accuracy_mode': True,
+                'unlimited_resources': True
             }
         }
         with open(accuracy_results_path, 'w') as f:
@@ -208,9 +225,11 @@ def run_complete_training():
         total_models = len([r for r in training_results.values() if 'error' not in r])
         
         logger.info("\n" + "=" * 80)
-        logger.info("🎉 COMPLETE TRAINING FINISHED - FULL EXECUTION!")
+        logger.info("🎉 MAXIMUM ACCURACY TRAINING FINISHED - UNLIMITED RESOURCES!")
+        logger.info(f"🎯 Target Accuracy: {EXTENDED_TRAINING_CONFIG['target_accuracy']:.1%} (80%+)")
+        logger.info(f"⚡ Training Configuration: {EXTENDED_TRAINING_CONFIG['epochs']} epochs, {BAYESIAN_OPT_CONFIG['n_calls']} Bayesian calls")
         logger.info(f"✅ Models Successfully Trained: {total_models}")
-        logger.info(f"🎯 Target Accuracy Achieved: {successful_models}/{total_models}")
+        logger.info(f"🏆 Target Accuracy Achieved: {successful_models}/{total_models}")
         
         # Log individual accuracy results
         if summary.get('accuracy_results'):
@@ -242,18 +261,26 @@ def run_complete_training():
         return False, {}
 
 if __name__ == "__main__":
-    print("🚀 PMC10963254 Complete Model Training - Full Execution")
+    print("🚀 PMC10963254 Complete Model Training - MAXIMUM ACCURACY OPTIMIZATION")
     print("This will train and save models for all stock indices with:")
-    print("  • All timeouts removed for unlimited execution")
-    print("  • Full Bayesian optimization (200+ calls)")
-    print("  • Extended training (300+ epochs)")
-    print("  • All features enabled")
-    print("  • Accuracy results saved in project folder")
+    print("  • MAXIMUM ACCURACY TARGET: 80%+ (increased from 70%)")
+    print("  • EXTENDED TRAINING: 1000 epochs (increased from 300)")
+    print("  • EXHAUSTIVE OPTIMIZATION: 500 Bayesian calls (increased from 200)")
+    print("  • ENHANCED SIGNAL PROCESSING: 500 EEMD trials (increased from 200)")
+    print("  • UNLIMITED RESOURCES: All timeouts removed, unlimited execution time")
+    print("  • ADVANCED TECHNIQUES: Cosine annealing, warm restarts, ensemble training")
+    print("  • COMPREHENSIVE RESULTS: All accuracy metrics saved in project folder")
+    print("=" * 80)
+    print("⚠️  WARNING: This is resource-intensive training optimized for maximum accuracy!")
+    print("🕒 Expected execution time: Several hours to days depending on hardware")
+    print("💾 Ensure sufficient disk space for models, checkpoints, and logs")
     print("=" * 80)
     
     success, results = run_complete_training()
     
     if success:
-        print("\n🎉 SUCCESS: Complete training finished with all results saved!")
+        print("\n🎉 SUCCESS: Maximum accuracy training finished with all results saved!")
+        print("🏆 Check results/complete_training/accuracy_results.json for detailed metrics")
+        print("💾 Models saved in saved_models/plstm_tal/ directory")
     else:
         print("\n❌ Training encountered issues. Check logs for details.")
