@@ -32,7 +32,7 @@ def run_complete_training():
         # Import modules
         from data.preprocessing import preprocess_stock_data
         from training.trainer import PLSTMTALTrainer
-        from config.settings import EXTENDED_TRAINING_CONFIG, BAYESIAN_OPT_CONFIG
+        from config.settings import EXTENDED_TRAINING_CONFIG, BAYESIAN_OPT_CONFIG, EEMD_CONFIG
         
         # Step 1: Load preprocessed data
         logger.info("📊 Loading preprocessed data...")
