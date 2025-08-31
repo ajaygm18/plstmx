@@ -4,13 +4,76 @@ As described in PMC10963254 research paper
 """
 
 import numpy as np
-from skopt import gp_minimize
-from skopt.space import Real, Integer
-from skopt.utils import use_named_args
-from skopt.acquisition import gaussian_ei
 import logging
 from typing import Dict, List, Tuple, Callable, Any
 from functools import partial
+
+# Try to import scikit-optimize, use fallback if not available
+try:
+    from skopt import gp_minimize
+    from skopt.space import Real, Integer
+    from skopt.utils import use_named_args
+    from skopt.acquisition import gaussian_ei
+    SKOPT_AVAILABLE = True
+except ImportError:
+    logging.warning("scikit-optimize not available, using fallback optimization")
+    SKOPT_AVAILABLE = False
+    
+    # Fallback implementations
+    class Real:
+        def __init__(self, low, high, name=None):
+            self.low = low
+            self.high = high
+            self.name = name
+    
+    class Integer:
+        def __init__(self, low, high, name=None):
+            self.low = low
+            self.high = high
+            self.name = name
+    
+    def use_named_args(dimensions):
+        def decorator(func):
+            def wrapper(params):
+                # Convert list of params to dict using dimension names
+                param_dict = {}
+                for i, dim in enumerate(dimensions):
+                    param_dict[dim.name] = params[i]
+                return func(**param_dict)
+            return wrapper
+        return decorator
+    
+    def gp_minimize(func, dimensions, n_calls=50, n_initial_points=10, random_state=42):
+        # Fallback: random search
+        np.random.seed(random_state)
+        best_score = float('inf')
+        best_params = None
+        results = []
+        
+        for _ in range(n_calls):
+            params = []
+            for dim in dimensions:
+                if isinstance(dim, Real):
+                    param = np.random.uniform(dim.low, dim.high)
+                else:  # Integer
+                    param = np.random.randint(dim.low, dim.high + 1)
+                params.append(param)
+            
+            score = func(params)
+            results.append(score)
+            
+            if score < best_score:
+                best_score = score
+                best_params = params
+        
+        # Create a mock result object
+        class MockResult:
+            def __init__(self, x, fun, func_vals):
+                self.x = x
+                self.fun = fun
+                self.func_vals = func_vals
+        
+        return MockResult(best_params, best_score, results)
 
 from config.settings import BAYESIAN_OPT_CONFIG
 
