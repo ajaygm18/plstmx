@@ -13,7 +13,7 @@ STOCK_INDICES = {
     'India': '^NSEI'    # NIFTY 50
 }
 
-START_DATE = '2020-01-01'  # Use recent data for faster testing
+START_DATE = '2005-01-01'  # Full range as per research paper
 END_DATE = '2022-12-31'
 
 # Technical Indicators List (40 indicators as specified)
@@ -32,7 +32,7 @@ PLSTM_CONFIG = {
     'attention_units': 64,
     'dropout_rate': 0.2,
     'batch_size': 32,
-    'epochs': 100,
+    'epochs': 150,  # More epochs for better training
     'learning_rate': 0.001
 }
 
