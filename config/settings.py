@@ -93,6 +93,7 @@ for directory in [DATA_DIR, MODELS_DIR, RESULTS_DIR]:
 
 # Extended Training Configuration for PMC10963254 compliance
 EXTENDED_TRAINING_CONFIG = {
+    'epochs': 300,  # Extended training epochs for achieving 70%+ accuracy
     'max_training_time': None,  # No time limit - disable timeouts
     'checkpoint_interval': 50,  # Save checkpoint every 50 epochs
     'backup_interval': 100,  # Backup model every 100 epochs
