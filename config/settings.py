@@ -25,17 +25,17 @@ TECHNICAL_INDICATORS = [
     'STOCH', 'STOCHRSI', 'ULTOSC', 'WILLR'
 ]
 
-# Model Configuration - Enhanced for extended training and 70%+ accuracy
+# Model Configuration - Optimized for MAXIMUM ACCURACY with unlimited resources
 PLSTM_CONFIG = {
     'sequence_length': 60,
-    'lstm_units': 128,
-    'attention_units': 64,
-    'dropout_rate': 0.2,
+    'lstm_units': 256,  # Increased from 128 for maximum capacity
+    'attention_units': 128,  # Increased from 64 for enhanced attention
+    'dropout_rate': 0.15,  # Reduced from 0.2 for maximum learning capacity
     'batch_size': 32,
-    'epochs': 300,  # Increased from 150 for extended training
-    'learning_rate': 0.001,
-    'patience': 50,  # Early stopping patience for extended training
-    'min_delta': 0.0001,  # Minimum improvement for early stopping
+    'epochs': 1000,  # Increased from 300 for maximum training
+    'learning_rate': 0.0005,  # Reduced for more stable convergence
+    'patience': 150,  # Increased patience for maximum training
+    'min_delta': 0.00001,  # More sensitive improvement detection
     'restore_best_weights': True,  # Restore best weights after training
     'verbose': 1,  # Enable progress output
     'validation_split': 0.2,  # Validation split for training
@@ -54,27 +54,27 @@ CAE_CONFIG = {
     'batch_size': 32
 }
 
-# EEMD Configuration - Enhanced for better noise reduction as per PMC10963254
+# EEMD Configuration - Optimized for maximum accuracy with 200 trials
 EEMD_CONFIG = {
-    'trials': 200,  # Increased from 100 for better ensemble averaging
-    'noise_width': 0.15,  # Reduced from 0.2 for more precise decomposition
+    'trials': 200,  # Optimized for balance between quality and performance
+    'noise_width': 0.10,  # Further reduced from 0.15 for highest precision decomposition
     'ext_EMD': None,
     'n_imfs': None,  # Let algorithm determine optimal number of IMFs
     'ensemble_mean': True,  # Use ensemble mean for better decomposition
     'extrema_detection': 'parabola',  # Enhanced extrema detection
-    'range_thr': 0.001,  # Range threshold for decomposition
-    'total_power_thr': 0.05  # Total power threshold
+    'range_thr': 0.0005,  # Reduced threshold for maximum precision
+    'total_power_thr': 0.02  # Reduced for maximum signal capture
 }
 
-# Bayesian Optimization Configuration - Enhanced for PMC10963254 requirements
+# Bayesian Optimization Configuration - Maximized for exhaustive hyperparameter optimization
 BAYESIAN_OPT_CONFIG = {
-    'n_calls': 200,  # Increased from 50 for more thorough optimization
-    'n_initial_points': 20,  # Increased initial points for better exploration
+    'n_calls': 500,  # Increased from 200 for exhaustive optimization
+    'n_initial_points': 50,  # Increased initial points for maximum exploration
     'random_state': 42,
     'acq_func': 'EI',  # Expected Improvement acquisition function
     'n_jobs': -1,  # Use all available cores
     'verbose': True,  # Enable verbose output for long training sessions
-    'timeout': None  # Disable timeouts for extended training
+    'timeout': None  # Disable timeouts for unlimited optimization
 }
 
 # Evaluation Configuration
@@ -91,23 +91,31 @@ RESULTS_DIR = 'results'
 for directory in [DATA_DIR, MODELS_DIR, RESULTS_DIR]:
     os.makedirs(directory, exist_ok=True)
 
-# Extended Training Configuration for PMC10963254 compliance
+# Extended Training Configuration - Optimized for MAXIMUM ACCURACY with unlimited resources
 EXTENDED_TRAINING_CONFIG = {
-    'max_training_time': None,  # No time limit - disable timeouts
-    'checkpoint_interval': 50,  # Save checkpoint every 50 epochs
-    'backup_interval': 100,  # Backup model every 100 epochs
+    'epochs': 1000,  # Increased from 300 for maximum training duration
+    'max_training_time': None,  # No time limit - unlimited execution
+    'checkpoint_interval': 25,  # More frequent checkpoints every 25 epochs
+    'backup_interval': 50,  # More frequent backups every 50 epochs
     'enable_tensorboard': True,  # Enable TensorBoard logging
     'log_dir': 'logs',  # TensorBoard log directory
     'reduce_lr_on_plateau': True,  # Reduce learning rate on plateau
-    'lr_reduction_factor': 0.5,  # Learning rate reduction factor
-    'lr_patience': 30,  # Patience for learning rate reduction
-    'min_lr': 1e-7,  # Minimum learning rate
-    'target_accuracy': 0.70,  # Target accuracy of 70%+ as required
-    'accuracy_patience': 100,  # Patience to reach target accuracy
+    'lr_reduction_factor': 0.3,  # More aggressive learning rate reduction
+    'lr_patience': 20,  # Reduced patience for faster learning rate adjustment
+    'min_lr': 1e-8,  # Lower minimum learning rate for maximum optimization
+    'target_accuracy': 0.80,  # Increased target accuracy to 80% for maximum performance
+    'accuracy_patience': 200,  # Increased patience to reach higher target accuracy
     'memory_growth': True,  # Enable memory growth for TensorFlow
-    'mixed_precision': False,  # Disable mixed precision for stability
+    'mixed_precision': False,  # Disable mixed precision for maximum stability
     'gradient_clipping': True,  # Enable gradient clipping
-    'max_gradient_norm': 1.0  # Maximum gradient norm
+    'max_gradient_norm': 0.5,  # Reduced gradient norm for better stability
+    'advanced_optimizers': True,  # Enable advanced optimizer techniques
+    'cosine_annealing': True,  # Enable cosine annealing learning rate schedule
+    'warm_restarts': True,  # Enable warm restarts for better optimization
+    'cyclic_learning_rate': True,  # Enable cyclic learning rate
+    'ensemble_training': True,  # Enable ensemble training techniques
+    'data_augmentation': True,  # Enable advanced data augmentation
+    'regularization_strength': 0.01  # L2 regularization for better generalization
 }
 
 # Timeout Configuration - Disable all timeouts for extended training

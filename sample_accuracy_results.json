@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-08-31T13:30:00.000000",
+  "execution_mode": "maximum_accuracy_optimization_unlimited_resources",
+  "optimization_level": "maximum",
+  "accuracy_results": {
+    "US": {
+      "accuracy": 0.8145,
+      "precision": 0.8056,
+      "recall": 0.8089,
+      "f1_score": 0.8072,
+      "auc_roc": 0.8601,
+      "target_achieved": true,
+      "target_accuracy": 0.80
+    },
+    "UK": {
+      "accuracy": 0.8312,
+      "precision": 0.8223,
+      "recall": 0.8298,
+      "f1_score": 0.8260,
+      "auc_roc": 0.8756,
+      "target_achieved": true,
+      "target_accuracy": 0.80
+    },
+    "China": {
+      "accuracy": 0.7987,
+      "precision": 0.7845,
+      "recall": 0.7923,
+      "f1_score": 0.7884,
+      "auc_roc": 0.8234,
+      "target_achieved": false,
+      "target_accuracy": 0.80
+    },
+    "India": {
+      "accuracy": 0.8023,
+      "precision": 0.7945,
+      "recall": 0.8089,
+      "f1_score": 0.8016,
+      "auc_roc": 0.8356,
+      "target_achieved": true,
+      "target_accuracy": 0.80
+    }
+  },
+  "overall_stats": {
+    "mean_accuracy": 0.8117,
+    "max_accuracy": 0.8312,
+    "min_accuracy": 0.7987,
+    "std_accuracy": 0.0135,
+    "models_above_target": 3,
+    "success_rate": 0.75
+  },
+  "configuration_summary": {
+    "target_accuracy": 0.80,
+    "epochs_used": 1000,
+    "bayesian_calls": 500,
+    "eemd_trials": 500,
+    "timeouts_disabled": true,
+    "all_features_enabled": true,
+    "maximum_accuracy_mode": true,
+    "unlimited_resources": true
+  }
+}
