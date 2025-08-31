@@ -175,7 +175,7 @@ class PeepholeLSTMCell(layers.Layer if TF_AVAILABLE else Layer):
         
         # Required for RNN compatibility
         self.state_size = [self.units, self.units]  # [h_state, c_state]
-        self.output_size = self.units
+        self.output_size = int(self.units)  # Ensure it's a Python int
         
     def build(self, input_shape):
         input_dim = input_shape[-1]

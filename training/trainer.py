@@ -48,15 +48,15 @@ class PLSTMTALTrainer:
                 model_config = {**PLSTM_CONFIG, **config_override, **params}
                 
                 # Initialize model
-                sequence_length = params.get('sequence_length', model_config['sequence_length'])
+                sequence_length = int(params.get('sequence_length', model_config['sequence_length']))
                 n_features = X_train.shape[2]
                 
                 model = PLSTMTAL(
                     sequence_length=sequence_length,
                     n_features=n_features,
-                    lstm_units=params.get('lstm_units', model_config['lstm_units']),
-                    attention_units=params.get('attention_units', model_config['attention_units']),
-                    dropout_rate=params.get('dropout_rate', model_config['dropout_rate'])
+                    lstm_units=int(params.get('lstm_units', model_config['lstm_units'])),
+                    attention_units=int(params.get('attention_units', model_config['attention_units'])),
+                    dropout_rate=float(params.get('dropout_rate', model_config['dropout_rate']))
                 )
                 
                 # Build model
@@ -75,8 +75,8 @@ class PLSTMTALTrainer:
                 history = model.train(
                     X_train, y_train,
                     validation_split=0.0,  # We provide explicit validation data
-                    epochs=params.get('epochs', model_config['epochs']),
-                    batch_size=params.get('batch_size', model_config['batch_size']),
+                    epochs=int(params.get('epochs', model_config['epochs'])),
+                    batch_size=int(params.get('batch_size', model_config['batch_size'])),
                     verbose=0
                 )
                 
