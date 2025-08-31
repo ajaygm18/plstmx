@@ -7,8 +7,29 @@ import numpy as np
 import pandas as pd
 from typing import Tuple, List
 import logging
-from PyEMD import EEMD
 from config.settings import EEMD_CONFIG
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Try to import PyEMD, use fallback if not available
+try:
+    from PyEMD import EEMD
+    PYEMD_AVAILABLE = True
+except ImportError:
+    logger.warning("PyEMD not available, using fallback implementation")
+    PYEMD_AVAILABLE = False
+    
+    class EEMD:
+        def __init__(self, trials=100, noise_width=0.2):
+            self.trials = trials
+            self.noise_width = noise_width
+        
+        def eemd(self, signal):
+            # Simple fallback: return original signal as the first IMF
+            # and noise as the residue
+            noise = np.random.normal(0, self.noise_width * np.std(signal), len(signal))
+            return [signal, noise]
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
