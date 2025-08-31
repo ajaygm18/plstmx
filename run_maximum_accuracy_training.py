@@ -12,6 +12,10 @@ import json
 import time
 from datetime import datetime
 
+# Configure GPU settings BEFORE any TensorFlow imports
+from utils.gpu_config import ensure_gpu_configured
+ensure_gpu_configured()
+
 # Configure logging for maximum training
 logging.basicConfig(
     level=logging.INFO,

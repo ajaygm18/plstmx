@@ -73,11 +73,9 @@ class PLSTMTALTrainer:
                 tf.config.threading.set_intra_op_parallelism_threads(0)  # Use all available cores
                 tf.config.threading.set_inter_op_parallelism_threads(0)  # Use all available cores
                 
-                # Enable memory growth if GPU is available
-                if hasattr(tf.config, 'experimental'):
-                    gpus = tf.config.experimental.list_physical_devices('GPU')
-                    for gpu in gpus:
-                        tf.config.experimental.set_memory_growth(gpu, True)
+                # Ensure GPU configuration is applied
+                from utils.gpu_config import ensure_gpu_configured
+                ensure_gpu_configured()
                 
                 # Prepare data with new sequence length if needed
                 if sequence_length != X_train.shape[1]:

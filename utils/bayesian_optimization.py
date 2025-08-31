@@ -417,13 +417,9 @@ def optimize_plstm_tal_hyperparameters(model_trainer: Callable,
             model_trainer, X_train, y_train, X_val, y_val
         )
         
-        # Configure for extended training (disable timeouts)
-        import tensorflow as tf
-        if hasattr(tf.config, 'experimental'):
-            # Enable memory growth to handle long training sessions
-            gpus = tf.config.experimental.list_physical_devices('GPU')
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
+        # Ensure GPU configuration is applied
+        from utils.gpu_config import ensure_gpu_configured
+        ensure_gpu_configured()
         
         logger.info(f"Starting optimization with {optimizer.n_calls} calls")
         logger.info(f"Target accuracy: {optimizer.target_accuracy:.1%}")
