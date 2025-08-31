@@ -21,7 +21,7 @@ except ImportError:
     PYEMD_AVAILABLE = False
     
     class EEMD:
-        def __init__(self, trials=50, noise_width=0.2):
+        def __init__(self, trials=10, noise_width=0.2):
             self.trials = trials
             self.noise_width = noise_width
         
