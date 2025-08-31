@@ -64,8 +64,8 @@ def run_extended_training_demo():
         
         for index_name, summary in preprocessing_summary.items():
             if 'error' not in summary:
-                logger.info(f"  📍 {index_name}: {summary['total_samples']} samples, "
-                           f"{summary['n_features']} features")
+                logger.info(f"  📍 {index_name}: {summary.get('train_samples', 0)} training samples, "
+                           f"{summary.get('feature_dim', 0)} features")
         
         # Initialize enhanced trainer
         logger.info("\n🤖 Initializing enhanced PLSTM-TAL trainer...")
