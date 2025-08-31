@@ -173,6 +173,10 @@ class PeepholeLSTMCell(layers.Layer if TF_AVAILABLE else Layer):
         self.dropout = dropout
         self.recurrent_dropout = recurrent_dropout
         
+        # Required for RNN compatibility
+        self.state_size = [self.units, self.units]  # [h_state, c_state]
+        self.output_size = int(self.units)  # Ensure it's a Python int
+        
     def build(self, input_shape):
         input_dim = input_shape[-1]
         
@@ -240,6 +244,8 @@ class PeepholeLSTMCell(layers.Layer if TF_AVAILABLE else Layer):
         return h_t, [h_t, c_t]
     
     def get_initial_state(self, inputs=None, batch_size=None, dtype=None):
+        if dtype is None:
+            dtype = tf.float32
         return [tf.zeros((batch_size, self.units), dtype=dtype),
                 tf.zeros((batch_size, self.units), dtype=dtype)]
 

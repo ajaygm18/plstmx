@@ -113,8 +113,12 @@ class TechnicalIndicatorsCalculator:
             change = np.abs(np.diff(close, 10))
             volatility = pd.Series(np.abs(np.diff(close))).rolling(window=10).sum()
             efficiency_ratio = change / volatility[9:]
+            
+            # For KAMA, we'll use a simplified approach with fixed alpha
+            # In practice, KAMA would use the efficiency ratio to adjust smoothing
+            kama_alpha = 0.2  # Simplified approach
             indicators_data['KAMA'] = np.concatenate([np.full(10, np.nan), 
-                                                     pd.Series(close[10:]).ewm(alpha=efficiency_ratio).mean().values])
+                                                     pd.Series(close[10:]).ewm(alpha=kama_alpha).mean().values])
             
             # MAMA (simplified)
             indicators_data['MAMA'] = self.calculate_ema(close, 5)
@@ -224,16 +228,22 @@ class TechnicalIndicatorsCalculator:
             positive_flow_sum = pd.Series(positive_flow).rolling(window=14).sum()
             negative_flow_sum = pd.Series(negative_flow).rolling(window=14).sum()
             
-            money_flow_ratio = positive_flow_sum / negative_flow_sum
+            # Avoid division by zero
+            money_flow_ratio = positive_flow_sum / (negative_flow_sum + 1e-8)
             indicators_data['MFI'] = 100 - (100 / (1 + money_flow_ratio))
             
             # Ultimate Oscillator (simplified)
             bp = close - np.minimum(low, np.roll(close, 1))
             tr_uo = np.maximum(high, np.roll(close, 1)) - np.minimum(low, np.roll(close, 1))
             
-            avg7 = pd.Series(bp).rolling(7).sum() / pd.Series(tr_uo).rolling(7).sum()
-            avg14 = pd.Series(bp).rolling(14).sum() / pd.Series(tr_uo).rolling(14).sum()
-            avg28 = pd.Series(bp).rolling(28).sum() / pd.Series(tr_uo).rolling(28).sum()
+            # Avoid division by zero
+            tr_sum_7 = pd.Series(tr_uo).rolling(7).sum()
+            tr_sum_14 = pd.Series(tr_uo).rolling(14).sum()
+            tr_sum_28 = pd.Series(tr_uo).rolling(28).sum()
+            
+            avg7 = pd.Series(bp).rolling(7).sum() / (tr_sum_7 + 1e-8)
+            avg14 = pd.Series(bp).rolling(14).sum() / (tr_sum_14 + 1e-8)
+            avg28 = pd.Series(bp).rolling(28).sum() / (tr_sum_28 + 1e-8)
             
             indicators_data['ULTOSC'] = 100 * (4 * avg7 + 2 * avg14 + avg28) / 7
             
@@ -260,7 +270,9 @@ class TechnicalIndicatorsCalculator:
             rsi_values = indicators_data['RSI']
             rsi_low = pd.Series(rsi_values).rolling(window=14).min()
             rsi_high = pd.Series(rsi_values).rolling(window=14).max()
-            stoch_rsi = (rsi_values - rsi_low) / (rsi_high - rsi_low)
+            rsi_range = rsi_high - rsi_low
+            # Avoid division by zero
+            stoch_rsi = (rsi_values - rsi_low) / (rsi_range + 1e-8)
             indicators_data['STOCHRSI'] = stoch_rsi * 100
             
             # Log Return
@@ -271,7 +283,7 @@ class TechnicalIndicatorsCalculator:
             indicators_df = pd.DataFrame(indicators_data, index=data.index)
             
             # Handle NaN values by forward filling and then backward filling
-            indicators_df = indicators_df.fillna(method='ffill').fillna(method='bfill')
+            indicators_df = indicators_df.ffill().bfill()
             
             logger.info(f"Calculated {len(indicators_df.columns)} technical indicators")
             return indicators_df

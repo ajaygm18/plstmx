@@ -32,13 +32,17 @@ except ImportError:
             self.scale_ = None
         
         def fit(self, X):
-            self.mean_ = np.mean(X, axis=0)
-            self.scale_ = np.std(X, axis=0)
+            # Handle NaN values
+            X_clean = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+            self.mean_ = np.mean(X_clean, axis=0)
+            self.scale_ = np.std(X_clean, axis=0)
             self.scale_ = np.where(self.scale_ == 0, 1, self.scale_)
             return self
         
         def transform(self, X):
-            return (X - self.mean_) / self.scale_
+            # Handle NaN values
+            X_clean = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+            return (X_clean - self.mean_) / self.scale_
         
         def fit_transform(self, X):
             return self.fit(X).transform(X)
@@ -192,8 +196,9 @@ class ContractiveAutoencoder:
             
             logger.info(f"Training Contractive Autoencoder for {epochs} epochs")
             
-            # Normalize the data
-            X_scaled = self.scaler.fit_transform(X)
+            # Normalize the data and handle NaN values
+            X_clean = np.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+            X_scaled = self.scaler.fit_transform(X_clean)
             
             # Handle fallback case
             if not TF_AVAILABLE:

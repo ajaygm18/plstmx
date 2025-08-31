@@ -8,3 +8,4 @@ yfinance>=0.2.65
 scikit-optimize>=0.10.2
 seaborn>=0.13.2
 matplotlib>=3.10.6
+EMD-signal>=1.6.4
