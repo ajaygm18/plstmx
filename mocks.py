@@ -32,6 +32,9 @@ class MockArray:
     def flatten(self):
         return MockArray(self.data)
     
+    def astype(self, dtype):
+        return MockArray(self.data)
+    
     def mean(self, axis=None):
         if not self.data:
             return 0
@@ -112,24 +115,82 @@ class MockNumpy:
         return MockArray([x if c else y for c in condition])
 
 class MockPandas:
+    class Index:
+        def __init__(self, data):
+            self.data = data
+        
+        def min(self):
+            import datetime
+            return datetime.date(2020, 1, 1)
+        
+        def max(self):
+            import datetime
+            return datetime.date(2020, 12, 31)
+        
+        def intersection(self, other):
+            return self
+        
+        def __len__(self):
+            return len(self.data)
+        
+        def __getitem__(self, key):
+            return self.data[key]
+
     class DataFrame:
         def __init__(self, data=None, index=None, columns=None):
-            self.data = data or {}
-            self.index = index or []
-            self.columns = columns or []
+            if isinstance(data, dict):
+                self.data = data
+                self.columns = list(data.keys()) if data else []
+                index_data = index or list(range(len(next(iter(data.values())) if data else [])))
+                self.index = MockPandas.Index(index_data)
+            else:
+                self.data = {}
+                self.columns = columns or []
+                self.index = MockPandas.Index(index or [])
             self._shape = (len(self.index), len(self.columns))
         
         @property
         def shape(self):
             return self._shape
         
+        @property  
+        def empty(self):
+            return len(self.data) == 0 and len(self.index) == 0
+        
         def __getitem__(self, key):
-            if key in self.data:
-                return self.data[key]
+            if isinstance(key, list):
+                # Handle selection of multiple columns
+                result_data = {col: self.data.get(col, [0] * len(self.index)) for col in key}
+                return MockPandas.DataFrame(result_data, index=self.index, columns=key)
+            elif key in self.data:
+                return MockPandas.Series(self.data[key])
             return MockPandas.Series([0] * len(self.index))
         
         def __setitem__(self, key, value):
             self.data[key] = value
+            if key not in self.columns:
+                self.columns.append(key)
+        
+        def __len__(self):
+            return len(self.index)
+        
+        def isnull(self):
+            # Return a DataFrame with all False (no nulls)
+            false_data = {col: [False] * len(self.index) for col in self.columns}
+            return MockPandas.DataFrame(false_data, index=self.index.data, columns=self.columns)
+        
+        def any(self):
+            # Return a Series with all False
+            return MockPandas.Series([False] * len(self.columns))
+        
+        def __lt__(self, other):
+            # Return a DataFrame with all False (no values less than other)
+            false_data = {col: [False] * len(self.index) for col in self.columns}
+            return MockPandas.DataFrame(false_data, index=self.index.data, columns=self.columns)
+        
+        def copy(self):
+            # Return a copy of the DataFrame
+            return MockPandas.DataFrame(self.data.copy(), index=self.index.data.copy(), columns=self.columns.copy())
         
         def fillna(self, **kwargs):
             return self
@@ -145,11 +206,34 @@ class MockPandas:
             return self
         
         def mean(self):
-            return MockPandas.Series([0] * len(self.data))
+            if not self.data:
+                return 0
+            return sum(self.data) / len(self.data)
+        
+        def std(self):
+            if not self.data:
+                return 0
+            mean_val = self.mean()
+            variance = sum((x - mean_val) ** 2 for x in self.data) / len(self.data)
+            return variance ** 0.5
+        
+        def min(self):
+            return min(self.data) if self.data else 0
+        
+        def max(self):
+            return max(self.data) if self.data else 0
+        
+        def any(self):
+            return any(self.data) if self.data else False
+        
+        def __eq__(self, other):
+            # Return a Series of boolean values
+            return MockPandas.Series([False] * len(self.data))
         
         def ewm(self, span):
             return self
         
+        @property
         def values(self):
             return MockArray(self.data)
 
@@ -350,15 +434,15 @@ class MockYfinance:
                 'Close': [100.5 + i * 0.1 for i in range(100)],
                 'Volume': [1000000 + i * 1000 for i in range(100)]
             }
-            df = MockPandas.DataFrame(data, index=dates)
+            df = MockPandas.DataFrame(data, index=dates, columns=['Open', 'High', 'Low', 'Close', 'Volume'])
+            df.data = data  # Ensure data is accessible
             return df
     
     @staticmethod
     def download(*args, **kwargs):
         # Return mock data for multiple symbols
-        return MockPandas.DataFrame({
-            'Close': [100 + i * 0.1 for i in range(100)]
-        })
+        data = {'Close': [100 + i * 0.1 for i in range(100)]}
+        return MockPandas.DataFrame(data, columns=['Close'])
 
 # Install mocks
 sys.modules['numpy'] = MockNumpy()
