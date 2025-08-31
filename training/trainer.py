@@ -34,23 +34,27 @@ class PLSTMTALTrainer:
         
     def create_plstm_tal_trainer(self, **config_override) -> callable:
         """
-        Create a trainer function for PLSTM-TAL with given configuration
+        Create enhanced trainer function for PLSTM-TAL with extended training support
         
         Args:
             **config_override: Configuration parameters to override
             
         Returns:
-            Trainer function for Bayesian optimization
+            Enhanced trainer function for Bayesian optimization
         """
         def trainer(X_train, y_train, X_val, y_val, **params):
             try:
-                # Merge default config with optimization parameters
-                model_config = {**PLSTM_CONFIG, **config_override, **params}
+                # Import required configurations
+                from config.settings import EXTENDED_TRAINING_CONFIG, TIMEOUT_CONFIG
                 
-                # Initialize model
+                # Merge configurations with priority: params > config_override > PLSTM_CONFIG > EXTENDED_TRAINING_CONFIG
+                model_config = {**PLSTM_CONFIG, **EXTENDED_TRAINING_CONFIG, **config_override, **params}
+                
+                # Initialize model with enhanced parameters
                 sequence_length = int(params.get('sequence_length', model_config['sequence_length']))
                 n_features = X_train.shape[2]
                 
+                # Enhanced model initialization with additional parameters
                 model = PLSTMTAL(
                     sequence_length=sequence_length,
                     n_features=n_features,
@@ -59,31 +63,57 @@ class PLSTMTALTrainer:
                     dropout_rate=float(params.get('dropout_rate', model_config['dropout_rate']))
                 )
                 
-                # Build model
+                # Build model with enhanced configuration
                 model.build_model()
+                
+                # Configure TensorFlow for extended training (disable timeouts)
+                import tensorflow as tf
+                
+                # Disable TensorFlow timeouts and configure for long training
+                tf.config.threading.set_intra_op_parallelism_threads(0)  # Use all available cores
+                tf.config.threading.set_inter_op_parallelism_threads(0)  # Use all available cores
+                
+                # Enable memory growth if GPU is available
+                if hasattr(tf.config, 'experimental'):
+                    gpus = tf.config.experimental.list_physical_devices('GPU')
+                    for gpu in gpus:
+                        tf.config.experimental.set_memory_growth(gpu, True)
                 
                 # Prepare data with new sequence length if needed
                 if sequence_length != X_train.shape[1]:
-                    # Re-create sequences with new length
                     logger.info(f"Re-creating sequences with length {sequence_length}")
-                    # This is a simplified approach - in practice, you'd need to recreate from raw features
                     min_seq_len = min(sequence_length, X_train.shape[1])
                     X_train = X_train[:, -min_seq_len:, :]
                     X_val = X_val[:, -min_seq_len:, :]
                 
-                # Train model
+                # Enhanced training configuration
+                training_epochs = int(params.get('epochs', model_config['epochs']))
+                batch_size = int(params.get('batch_size', model_config['batch_size']))
+                
+                logger.info(f"Starting extended training for {training_epochs} epochs")
+                
+                # Enhanced training with extended configuration
                 history = model.train(
                     X_train, y_train,
-                    validation_split=0.0,  # We provide explicit validation data
-                    epochs=int(params.get('epochs', model_config['epochs'])),
-                    batch_size=int(params.get('batch_size', model_config['batch_size'])),
-                    verbose=0
+                    validation_data=(X_val, y_val),  # Use explicit validation data
+                    epochs=training_epochs,
+                    batch_size=batch_size,
+                    verbose=model_config.get('verbose', 1),
+                    # Extended training parameters
+                    patience=model_config.get('patience', 50),
+                    min_delta=model_config.get('min_delta', 0.0001),
+                    restore_best_weights=model_config.get('restore_best_weights', True),
+                    monitor=model_config.get('monitor', 'val_accuracy'),
+                    mode=model_config.get('mode', 'max'),
+                    save_best_only=model_config.get('save_best_only', True)
                 )
+                
+                logger.info(f"Training completed for {training_epochs} epochs")
                 
                 return model, history
                 
             except Exception as e:
-                logger.error(f"Error in PLSTM-TAL trainer: {str(e)}")
+                logger.error(f"Error in enhanced PLSTM-TAL trainer: {str(e)}")
                 raise
         
         return trainer

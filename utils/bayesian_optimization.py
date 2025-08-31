@@ -5,6 +5,7 @@ As described in PMC10963254 research paper
 
 import numpy as np
 import logging
+import time
 from typing import Dict, List, Tuple, Callable, Any
 from functools import partial
 
@@ -75,7 +76,7 @@ except ImportError:
         
         return MockResult(best_params, best_score, results)
 
-from config.settings import BAYESIAN_OPT_CONFIG
+from config.settings import BAYESIAN_OPT_CONFIG, EXTENDED_TRAINING_CONFIG
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -87,10 +88,10 @@ class BayesianOptimizer:
     
     def __init__(self, n_calls: int = None, n_initial_points: int = None, random_state: int = None):
         """
-        Initialize Bayesian Optimizer
+        Initialize Bayesian Optimizer with enhanced configuration for PMC10963254
         
         Args:
-            n_calls: Number of optimization calls
+            n_calls: Number of optimization calls (increased for extended optimization)
             n_initial_points: Number of initial random points
             random_state: Random state for reproducibility
         """
@@ -98,19 +99,25 @@ class BayesianOptimizer:
         self.n_initial_points = n_initial_points or BAYESIAN_OPT_CONFIG['n_initial_points']
         self.random_state = random_state or BAYESIAN_OPT_CONFIG['random_state']
         
-        # Define search space for PLSTM-TAL hyperparameters
+        # Enhanced search space for PLSTM-TAL hyperparameters (PMC10963254 compliant)
         self.search_space = [
-            Integer(32, 256, name='lstm_units'),           # LSTM units
-            Integer(16, 128, name='attention_units'),      # Attention units
-            Real(0.1, 0.5, name='dropout_rate'),          # Dropout rate
-            Real(1e-5, 1e-2, name='learning_rate'),       # Learning rate
-            Integer(16, 64, name='batch_size'),            # Batch size
-            Integer(30, 120, name='sequence_length'),      # Sequence length
+            Integer(64, 512, name='lstm_units'),           # Expanded LSTM units range
+            Integer(32, 256, name='attention_units'),      # Expanded attention units range
+            Real(0.05, 0.6, name='dropout_rate'),          # Wider dropout rate range
+            Real(1e-6, 1e-1, name='learning_rate'),        # Expanded learning rate range
+            Integer(16, 128, name='batch_size'),           # Expanded batch size range
+            Integer(30, 120, name='sequence_length'),      # Sequence length range
+            Integer(200, 500, name='epochs'),              # Extended epochs range for long training
+            Real(0.1, 0.9, name='recurrent_dropout'),      # Recurrent dropout for LSTM
+            Integer(1, 4, name='lstm_layers'),             # Number of LSTM layers
+            Real(0.0001, 0.1, name='l1_reg'),             # L1 regularization
+            Real(0.0001, 0.1, name='l2_reg'),             # L2 regularization
         ]
         
         self.best_params = None
         self.best_score = None
         self.optimization_history = []
+        self.target_accuracy = EXTENDED_TRAINING_CONFIG['target_accuracy']  # 70% target
         
     def define_objective_function(self, model_trainer: Callable, X_train: np.ndarray, 
                                 y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray) -> Callable:
@@ -132,7 +139,10 @@ class BayesianOptimizer:
             try:
                 logger.info(f"Evaluating hyperparameters: {params}")
                 
-                # Train model with given parameters
+                # Enhanced training with extended configuration
+                start_time = time.time()
+                
+                # Train model with given parameters and extended configuration
                 model, history = model_trainer(
                     X_train=X_train,
                     y_train=y_train,
@@ -141,13 +151,48 @@ class BayesianOptimizer:
                     **params
                 )
                 
-                # Evaluate on validation set
+                training_time = time.time() - start_time
+                
+                # Evaluate on validation set with comprehensive metrics
                 val_loss, val_accuracy, val_precision, val_recall = model.evaluate(X_val, y_val, verbose=0)
                 
-                # Calculate F1 score
+                # Calculate F1 score and other metrics
                 val_f1 = 2 * (val_precision * val_recall) / (val_precision + val_recall) if (val_precision + val_recall) > 0 else 0
                 
-                # Use negative accuracy as objective (since we minimize)
+                # Enhanced objective function with multiple criteria
+                # Primary: maximize accuracy, Secondary: minimize loss, Tertiary: maximize F1
+                accuracy_weight = 0.7
+                f1_weight = 0.2
+                loss_weight = 0.1
+                
+                # Composite objective (negative because we minimize)
+                objective_value = -(accuracy_weight * val_accuracy + f1_weight * val_f1 - loss_weight * val_loss)
+                
+                # Store enhanced evaluation results
+                eval_results = {
+                    'params': params,
+                    'val_accuracy': val_accuracy,
+                    'val_f1': val_f1,
+                    'val_loss': val_loss,
+                    'val_precision': val_precision,
+                    'val_recall': val_recall,
+                    'objective_value': objective_value,
+                    'training_time': training_time,
+                    'target_met': val_accuracy >= self.target_accuracy
+                }
+                
+                self.optimization_history.append(eval_results)
+                
+                logger.info(f"Validation metrics - Accuracy: {val_accuracy:.4f}, F1: {val_f1:.4f}, "
+                           f"Precision: {val_precision:.4f}, Recall: {val_recall:.4f}, "
+                           f"Training time: {training_time:.2f}s")
+                
+                # Check if target accuracy is reached
+                if val_accuracy >= self.target_accuracy:
+                    logger.info(f"🎯 Target accuracy {self.target_accuracy:.1%} achieved! "
+                               f"Current accuracy: {val_accuracy:.4f}")
+                
+                return objective_value
                 objective_value = -val_accuracy
                 
                 # Store evaluation results
@@ -173,56 +218,81 @@ class BayesianOptimizer:
     
     def optimize(self, objective_function: Callable) -> Dict[str, Any]:
         """
-        Perform Bayesian optimization
+        Perform enhanced Bayesian optimization for extended training
         
         Args:
             objective_function: Function to optimize
             
         Returns:
-            Optimization results
+            Optimization results with extended metrics
         """
         try:
-            logger.info(f"Starting Bayesian optimization with {self.n_calls} calls")
+            logger.info(f"Starting extended Bayesian optimization with {self.n_calls} calls")
+            logger.info(f"Target accuracy: {self.target_accuracy:.1%}")
             
-            # Perform optimization
-            result = gp_minimize(
-                func=objective_function,
-                dimensions=self.search_space,
-                n_calls=self.n_calls,
-                n_initial_points=self.n_initial_points,
-                random_state=self.random_state,
-                acq_func='EI',  # Expected Improvement
-                n_jobs=1
-            )
+            # Enhanced optimization configuration
+            optimization_config = {
+                'func': objective_function,
+                'dimensions': self.search_space,
+                'n_calls': self.n_calls,
+                'n_initial_points': self.n_initial_points,
+                'random_state': self.random_state,
+                'acq_func': BAYESIAN_OPT_CONFIG.get('acq_func', 'EI'),
+                'n_jobs': BAYESIAN_OPT_CONFIG.get('n_jobs', 1),
+                'verbose': BAYESIAN_OPT_CONFIG.get('verbose', True)
+            }
             
-            # Extract best parameters
+            start_time = time.time()
+            
+            # Perform optimization with no timeout
+            result = gp_minimize(**optimization_config)
+            
+            optimization_time = time.time() - start_time
+            
+            # Extract best parameters with enhanced parameter mapping
             best_params_list = result.x
             self.best_params = {
-                'lstm_units': best_params_list[0],
-                'attention_units': best_params_list[1],
-                'dropout_rate': best_params_list[2],
-                'learning_rate': best_params_list[3],
-                'batch_size': best_params_list[4],
-                'sequence_length': best_params_list[5]
+                'lstm_units': int(best_params_list[0]),
+                'attention_units': int(best_params_list[1]),
+                'dropout_rate': float(best_params_list[2]),
+                'learning_rate': float(best_params_list[3]),
+                'batch_size': int(best_params_list[4]),
+                'sequence_length': int(best_params_list[5]),
+                'epochs': int(best_params_list[6]),
+                'recurrent_dropout': float(best_params_list[7]),
+                'lstm_layers': int(best_params_list[8]),
+                'l1_reg': float(best_params_list[9]),
+                'l2_reg': float(best_params_list[10])
             }
             
             self.best_score = -result.fun  # Convert back to positive
             
+            # Enhanced optimization results
             optimization_results = {
                 'best_params': self.best_params,
                 'best_score': self.best_score,
                 'optimization_history': self.optimization_history,
                 'convergence_trace': result.func_vals,
-                'n_calls': len(result.func_vals)
+                'n_calls': len(result.func_vals),
+                'optimization_time': optimization_time,
+                'target_accuracy': self.target_accuracy,
+                'target_achieved': self.best_score >= self.target_accuracy,
+                'best_accuracy_achieved': max([r['val_accuracy'] for r in self.optimization_history]) if self.optimization_history else 0,
+                'convergence_info': {
+                    'converged': len(result.func_vals) < self.n_calls,
+                    'improvement_ratio': (max(result.func_vals) - min(result.func_vals)) / abs(max(result.func_vals)) if result.func_vals else 0
+                }
             }
             
-            logger.info(f"Optimization completed. Best score: {self.best_score:.4f}")
+            logger.info(f"Optimization completed in {optimization_time:.2f}s")
+            logger.info(f"Best accuracy: {optimization_results['best_accuracy_achieved']:.4f}")
+            logger.info(f"Target achieved: {optimization_results['target_achieved']}")
             logger.info(f"Best parameters: {self.best_params}")
             
             return optimization_results
             
         except Exception as e:
-            logger.error(f"Error in Bayesian optimization: {str(e)}")
+            logger.error(f"Error in enhanced Bayesian optimization: {str(e)}")
             raise
     
     def get_best_params(self) -> Dict[str, Any]:
@@ -321,7 +391,7 @@ def optimize_plstm_tal_hyperparameters(model_trainer: Callable,
                                      X_val: np.ndarray, y_val: np.ndarray,
                                      n_calls: int = None) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     """
-    Optimize PLSTM-TAL hyperparameters using Bayesian optimization
+    Enhanced PLSTM-TAL hyperparameter optimization for PMC10963254 compliance
     
     Args:
         model_trainer: Function to train PLSTM-TAL model
@@ -329,38 +399,68 @@ def optimize_plstm_tal_hyperparameters(model_trainer: Callable,
         y_train: Training targets
         X_val: Validation features
         y_val: Validation targets
-        n_calls: Number of optimization calls
+        n_calls: Number of optimization calls (increased for extended optimization)
         
     Returns:
-        Tuple of (best_params, optimization_results)
+        Tuple of (best_params, comprehensive_optimization_results)
     """
     try:
-        logger.info("Starting hyperparameter optimization for PLSTM-TAL")
+        logger.info("Starting enhanced hyperparameter optimization for PLSTM-TAL")
+        logger.info(f"Training data shape: {X_train.shape}")
+        logger.info(f"Validation data shape: {X_val.shape}")
         
-        # Initialize optimizer
+        # Initialize enhanced optimizer
         optimizer = BayesianOptimizer(n_calls=n_calls)
         
-        # Define objective function
+        # Define objective function with extended training support
         objective = optimizer.define_objective_function(
             model_trainer, X_train, y_train, X_val, y_val
         )
         
-        # Perform optimization
+        # Configure for extended training (disable timeouts)
+        import tensorflow as tf
+        if hasattr(tf.config, 'experimental'):
+            # Enable memory growth to handle long training sessions
+            gpus = tf.config.experimental.list_physical_devices('GPU')
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+        
+        logger.info(f"Starting optimization with {optimizer.n_calls} calls")
+        logger.info(f"Target accuracy: {optimizer.target_accuracy:.1%}")
+        
+        # Perform enhanced optimization
+        start_time = time.time()
         results = optimizer.optimize(objective)
+        total_time = time.time() - start_time
         
         # Get best parameters
         best_params = optimizer.get_best_params()
         
-        # Analyze parameter importance
+        # Enhanced analysis
         param_importance = optimizer.analyze_parameter_importance()
         results['parameter_importance'] = param_importance
+        results['total_optimization_time'] = total_time
+        results['average_trial_time'] = total_time / len(optimizer.optimization_history) if optimizer.optimization_history else 0
         
-        logger.info("Hyperparameter optimization completed successfully")
+        # Check if target was achieved
+        best_accuracy = max([r['val_accuracy'] for r in optimizer.optimization_history]) if optimizer.optimization_history else 0
+        target_achieved = best_accuracy >= optimizer.target_accuracy
+        
+        logger.info("Enhanced hyperparameter optimization completed successfully")
+        logger.info(f"Total optimization time: {total_time:.2f}s")
+        logger.info(f"Best accuracy achieved: {best_accuracy:.4f}")
+        logger.info(f"Target accuracy ({optimizer.target_accuracy:.1%}) achieved: {target_achieved}")
+        logger.info(f"Number of trials: {len(optimizer.optimization_history)}")
+        
+        if target_achieved:
+            logger.info("🎯 SUCCESS: Target accuracy achieved!")
+        else:
+            logger.warning(f"⚠️  Target accuracy not achieved. Best: {best_accuracy:.4f}, Target: {optimizer.target_accuracy:.4f}")
         
         return best_params, results
         
     except Exception as e:
-        logger.error(f"Error in hyperparameter optimization: {str(e)}")
+        logger.error(f"Error in enhanced hyperparameter optimization: {str(e)}")
         raise
 
 class GridSearchOptimizer:

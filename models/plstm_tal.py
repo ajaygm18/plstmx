@@ -6,6 +6,8 @@ Based on the research paper PMC10963254
 import numpy as np
 import pandas as pd
 import logging
+import os
+import time
 from typing import Tuple, Dict, Optional
 
 # Try to import TensorFlow, use fallback if not available
@@ -46,7 +48,7 @@ except ImportError:
         def inverse_transform(self, X):
             return X * self.scale_ + self.min_
 
-from config.settings import PLSTM_CONFIG
+from config.settings import PLSTM_CONFIG, MODELS_DIR
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -368,66 +370,166 @@ class PLSTMTAL:
             logger.error(f"Error preparing data: {str(e)}")
             raise
     
-    def train(self, X: np.ndarray, y: np.ndarray, validation_split: float = 0.2,
-              epochs: int = None, batch_size: int = None, verbose: int = 1) -> Dict:
+    def train(self, X: np.ndarray, y: np.ndarray, validation_data: tuple = None, 
+              validation_split: float = 0.2, epochs: int = None, batch_size: int = None, 
+              verbose: int = 1, patience: int = None, min_delta: float = None,
+              restore_best_weights: bool = None, monitor: str = None, mode: str = None,
+              save_best_only: bool = None, **kwargs) -> Dict:
         """
-        Train the PLSTM-TAL model
+        Enhanced train method for PLSTM-TAL model with extended training support
         
         Args:
             X: Feature sequences
             y: Target sequences
-            validation_split: Fraction for validation
+            validation_data: Tuple of (X_val, y_val) for validation
+            validation_split: Fraction for validation (if validation_data not provided)
             epochs: Number of training epochs
             batch_size: Training batch size
             verbose: Verbosity level
+            patience: Early stopping patience
+            min_delta: Minimum improvement for early stopping
+            restore_best_weights: Whether to restore best weights
+            monitor: Metric to monitor for callbacks
+            mode: Mode for monitoring (min/max)
+            save_best_only: Whether to save only best model
+            **kwargs: Additional training parameters
             
         Returns:
-            Training history
+            Enhanced training history
         """
         try:
-            epochs = epochs or PLSTM_CONFIG['epochs']
+            # Import extended configuration
+            from config.settings import EXTENDED_TRAINING_CONFIG
+            
+            # Use enhanced defaults
+            epochs = epochs or EXTENDED_TRAINING_CONFIG.get('epochs', PLSTM_CONFIG['epochs'])
             batch_size = batch_size or PLSTM_CONFIG['batch_size']
+            patience = patience or EXTENDED_TRAINING_CONFIG.get('patience', 50)
+            min_delta = min_delta or EXTENDED_TRAINING_CONFIG.get('min_delta', 0.0001)
+            restore_best_weights = restore_best_weights if restore_best_weights is not None else EXTENDED_TRAINING_CONFIG.get('restore_best_weights', True)
+            monitor = monitor or EXTENDED_TRAINING_CONFIG.get('monitor', 'val_accuracy')
+            mode = mode or EXTENDED_TRAINING_CONFIG.get('mode', 'max')
+            save_best_only = save_best_only if save_best_only is not None else EXTENDED_TRAINING_CONFIG.get('save_best_only', True)
             
             if self.model is None:
                 self.n_features = X.shape[2]
                 self.build_model()
             
-            logger.info(f"Training PLSTM-TAL for {epochs} epochs")
+            logger.info(f"Starting enhanced PLSTM-TAL training for {epochs} epochs")
+            logger.info(f"Target accuracy: {EXTENDED_TRAINING_CONFIG.get('target_accuracy', 0.7):.1%}")
+            logger.info(f"Monitor: {monitor}, Mode: {mode}, Patience: {patience}")
             
-            # Callbacks
+            # Enhanced callbacks for extended training
             callbacks = [
                 keras.callbacks.EarlyStopping(
-                    monitor='val_loss',
-                    patience=15,
-                    restore_best_weights=True
-                ),
-                keras.callbacks.ReduceLROnPlateau(
-                    monitor='val_loss',
-                    factor=0.5,
-                    patience=7,
-                    min_lr=1e-7
-                ),
-                keras.callbacks.ModelCheckpoint(
-                    'best_plstm_tal.h5',
-                    monitor='val_accuracy',
-                    save_best_only=True,
-                    mode='max'
+                    monitor=monitor,
+                    patience=patience,
+                    min_delta=min_delta,
+                    restore_best_weights=restore_best_weights,
+                    verbose=verbose
                 )
             ]
             
-            # Train the model
-            history = self.model.fit(
-                X, y,
-                epochs=epochs,
-                batch_size=batch_size,
-                validation_split=validation_split,
-                callbacks=callbacks,
-                verbose=verbose,
-                shuffle=True
+            # Add learning rate reduction if enabled
+            if EXTENDED_TRAINING_CONFIG.get('reduce_lr_on_plateau', True):
+                callbacks.append(
+                    keras.callbacks.ReduceLROnPlateau(
+                        monitor=monitor,
+                        factor=EXTENDED_TRAINING_CONFIG.get('lr_reduction_factor', 0.5),
+                        patience=EXTENDED_TRAINING_CONFIG.get('lr_patience', 30),
+                        min_lr=EXTENDED_TRAINING_CONFIG.get('min_lr', 1e-7),
+                        verbose=verbose
+                    )
+                )
+            
+            # Add model checkpointing
+            checkpoint_path = os.path.join(MODELS_DIR, f'plstm_tal_best_{int(time.time())}.h5')
+            callbacks.append(
+                keras.callbacks.ModelCheckpoint(
+                    checkpoint_path,
+                    monitor=monitor,
+                    save_best_only=save_best_only,
+                    mode=mode,
+                    save_weights_only=False,
+                    verbose=verbose
+                )
             )
             
+            # Add TensorBoard logging if enabled
+            if EXTENDED_TRAINING_CONFIG.get('enable_tensorboard', True):
+                log_dir = os.path.join(EXTENDED_TRAINING_CONFIG.get('log_dir', 'logs'), 
+                                     f'plstm_tal_{int(time.time())}')
+                callbacks.append(
+                    keras.callbacks.TensorBoard(
+                        log_dir=log_dir,
+                        histogram_freq=1,
+                        write_graph=True,
+                        write_images=True,
+                        update_freq='epoch'
+                    )
+                )
+            
+            # Custom callback to check target accuracy
+            class TargetAccuracyCallback(keras.callbacks.Callback):
+                def __init__(self, target_accuracy):
+                    super().__init__()
+                    self.target_accuracy = target_accuracy
+                    
+                def on_epoch_end(self, epoch, logs=None):
+                    val_acc = logs.get('val_accuracy', 0)
+                    if val_acc >= self.target_accuracy:
+                        logger.info(f"🎯 Target accuracy {self.target_accuracy:.1%} achieved at epoch {epoch + 1}!")
+                        logger.info(f"Current validation accuracy: {val_acc:.4f}")
+            
+            callbacks.append(TargetAccuracyCallback(EXTENDED_TRAINING_CONFIG.get('target_accuracy', 0.7)))
+            
+            # Prepare training arguments
+            train_args = {
+                'x': X,
+                'y': y,
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'callbacks': callbacks,
+                'verbose': verbose,
+                'shuffle': True
+            }
+            
+            # Use validation_data if provided, otherwise use validation_split
+            if validation_data is not None:
+                train_args['validation_data'] = validation_data
+            else:
+                train_args['validation_split'] = validation_split
+            
+            logger.info("Starting training with enhanced configuration...")
+            start_time = time.time()
+            
+            # Train the model with no timeout
+            history = self.model.fit(**train_args)
+            
+            training_time = time.time() - start_time
+            
             self.is_trained = True
-            logger.info("PLSTM-TAL training completed")
+            
+            # Enhanced training completion logging
+            best_val_acc = max(history.history.get('val_accuracy', [0]))
+            target_acc = EXTENDED_TRAINING_CONFIG.get('target_accuracy', 0.7)
+            
+            logger.info(f"Enhanced PLSTM-TAL training completed in {training_time:.2f}s")
+            logger.info(f"Best validation accuracy: {best_val_acc:.4f}")
+            logger.info(f"Target accuracy ({target_acc:.1%}) achieved: {best_val_acc >= target_acc}")
+            
+            # Add training metadata to history
+            if hasattr(history, 'history'):
+                history.history['training_time'] = training_time
+                history.history['target_accuracy'] = target_acc
+                history.history['target_achieved'] = best_val_acc >= target_acc
+                history.history['best_val_accuracy'] = best_val_acc
+            
+            return history
+            
+        except Exception as e:
+            logger.error(f"Error in enhanced PLSTM-TAL training: {str(e)}")
+            raise
             
             return history.history
             
