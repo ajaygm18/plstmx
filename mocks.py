@@ -551,6 +551,60 @@ class MockNumpy:
         
         return MockArray(result)
     
+    @staticmethod
+    def isnan(arr):
+        """Check for NaN values"""
+        import math
+        if hasattr(arr, 'data'):
+            data = arr.data
+        else:
+            data = arr if isinstance(arr, list) else [arr]
+        
+        result = []
+        for x in data:
+            try:
+                result.append(math.isnan(x) if isinstance(x, float) else False)
+            except:
+                result.append(False)
+        
+        return MockArray(result)
+    
+    @staticmethod
+    def isfinite(arr):
+        """Check for finite values"""
+        import math
+        if hasattr(arr, 'data'):
+            data = arr.data
+        else:
+            data = arr if isinstance(arr, list) else [arr]
+        
+        result = []
+        for x in data:
+            try:
+                result.append(math.isfinite(x) if isinstance(x, (int, float)) else True)
+            except:
+                result.append(True)
+        
+        return MockArray(result)
+    
+    @staticmethod
+    def isinf(arr):
+        """Check for infinite values"""
+        import math
+        if hasattr(arr, 'data'):
+            data = arr.data
+        else:
+            data = arr if isinstance(arr, list) else [arr]
+        
+        result = []
+        for x in data:
+            try:
+                result.append(math.isinf(x) if isinstance(x, float) else False)
+            except:
+                result.append(False)
+        
+        return MockArray(result)
+    
     # Add constants
     nan = float('nan')
     pi = 3.14159265359
@@ -882,6 +936,19 @@ class MockPandas:
             elif hasattr(other, 'data'):
                 return MockPandas.Series([y / x if x != 0 else 0 for x, y in zip(self.data, other.data)])
             return MockPandas.Series([other / x if x != 0 else 0 for x in self.data])
+        
+        def isna(self):
+            """Check for NaN values"""
+            import math
+            return MockPandas.Series([math.isnan(x) if isinstance(x, float) else False for x in self.data])
+        
+        def isnull(self):
+            """Alias for isna"""
+            return self.isna()
+        
+        def all(self):
+            """Check if all values are True"""
+            return all(self.data) if self.data else True
         
         @property
         def values(self):
