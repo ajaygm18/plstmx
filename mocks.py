@@ -50,6 +50,7 @@ class MockArray:
 class MockNumpy:
     array = MockArray
     ndarray = MockArray
+    float64 = float  # Add float64 type
     
     @staticmethod
     def random(*args, **kwargs):
@@ -130,6 +131,9 @@ class MockPandas:
         def intersection(self, other):
             return self
         
+        def copy(self):
+            return MockPandas.Index(self.data.copy() if hasattr(self.data, 'copy') else list(self.data))
+        
         def __len__(self):
             return len(self.data)
         
@@ -190,7 +194,10 @@ class MockPandas:
         
         def copy(self):
             # Return a copy of the DataFrame
-            return MockPandas.DataFrame(self.data.copy(), index=self.index.data.copy(), columns=self.columns.copy())
+            copied_data = self.data.copy() if hasattr(self.data, 'copy') else dict(self.data)
+            copied_index = self.index.copy() if hasattr(self.index, 'copy') else self.index
+            copied_columns = self.columns.copy() if hasattr(self.columns, 'copy') else list(self.columns)
+            return MockPandas.DataFrame(copied_data, index=copied_index.data if hasattr(copied_index, 'data') else copied_index, columns=copied_columns)
         
         def fillna(self, **kwargs):
             return self
