@@ -1,0 +1,54 @@
+2025-09-01 16:06:23.439967: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+2025-09-01 16:06:23.484876: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2025-09-01 16:06:24.754323: I external/local_xla/xla/tsl/cuda/cudart_stub.cc:31] Could not find cuda drivers on your machine, GPU will not be used.
+2025-09-01 16:06:25.952235: E external/local_xla/xla/stream_executor/cuda/cuda_platform.cc:51] failed call to cuInit: INTERNAL: CUDA error: Failed call to cuInit: UNKNOWN ERROR (303)
+2025-09-01 16:06:25,952 - INFO - 🚀 Starting Complete Model Training for PMC10963254 - US INDEX ONLY
+2025-09-01 16:06:25,952 - INFO - 🎯 Target: 70% accuracy with unlimited resources and exhaustive optimization
+2025-09-01 16:06:25,952 - INFO - ⚡ Configuration: 1000 epochs, 500 Bayesian calls, 200 EEMD trials
+2025-09-01 16:06:26,342 - INFO - 📊 Loading preprocessed data...
+2025-09-01 16:06:26,342 - INFO - Loading stock market data...
+2025-09-01 16:06:26,342 - INFO - Loading data for US (^GSPC)
+2025-09-01 16:06:26,350 - ERROR - Failed to get ticker '^GSPC' reason: Impersonating chrome136 is not supported
+2025-09-01 16:06:26,351 - ERROR - Error loading data for US (^GSPC): Impersonating chrome136 is not supported
+2025-09-01 16:06:26,351 - ERROR - Failed to load US: Impersonating chrome136 is not supported
+2025-09-01 16:06:26,351 - ERROR - Error loading data: Failed to load any stock data
+2025-09-01 16:06:26,351 - ERROR - Error in preprocessing pipeline: Failed to load any stock data
+2025-09-01 16:06:26,351 - ERROR - ❌ Complete training failed: Failed to load any stock data
+2025-09-01 16:06:26,352 - ERROR - Traceback (most recent call last):
+  File "/home/runner/work/plstmx/plstmx/run_complete_training.py", line 43, in run_complete_training
+    processed_data, preprocessing_summary = preprocess_stock_data()
+                                            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/plstmx/plstmx/data/preprocessing.py", line 377, in preprocess_stock_data
+    processed_data = preprocessor.process_all_indices()
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/plstmx/plstmx/data/preprocessing.py", line 286, in process_all_indices
+    summary = self.load_and_prepare_data()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/plstmx/plstmx/data/preprocessing.py", line 43, in load_and_prepare_data
+    self.data_dict, summary = load_stock_data()
+                              ^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/plstmx/plstmx/data/data_loader.py", line 159, in load_stock_data
+    data = loader.load_all_indices()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/plstmx/plstmx/data/data_loader.py", line 80, in load_all_indices
+    raise ValueError("Failed to load any stock data")
+ValueError: Failed to load any stock data
+
+🚀 PMC10963254 Complete Model Training - US INDEX ONLY (70% Target)
+This will train and save models for US stock index only with:
+  • TARGET ACCURACY: 70% (as specified in requirements)
+  • EXTENDED TRAINING: 1000 epochs (increased from 300)
+  • EXHAUSTIVE OPTIMIZATION: 500 Bayesian calls (increased from 200)
+  • ENHANCED SIGNAL PROCESSING: 200 EEMD trials
+  • UNLIMITED RESOURCES: All timeouts removed, unlimited execution time
+  • ADVANCED TECHNIQUES: Cosine annealing, warm restarts, ensemble training
+  • US INDEX ONLY: S&P 500 (^GSPC) data only
+  • COMPREHENSIVE RESULTS: All accuracy metrics saved in project folder
+================================================================================
+⚠️  WARNING: This is resource-intensive training optimized for maximum accuracy!
+🕒 Expected execution time: Several hours to days depending on hardware
+💾 Ensure sufficient disk space for models, checkpoints, and logs
+================================================================================
+
+❌ Training encountered issues. Check logs for details.
