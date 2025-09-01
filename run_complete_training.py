@@ -28,9 +28,9 @@ logger = logging.getLogger(__name__)
 def run_complete_training():
     """Run complete training and save all models and results"""
     
-    logger.info("🚀 Starting Complete Model Training for PMC10963254 - MAXIMUM ACCURACY OPTIMIZATION")
-    logger.info("🎯 Target: 80%+ accuracy with unlimited resources and exhaustive optimization")
-    logger.info("⚡ Configuration: 1000 epochs, 500 Bayesian calls, 500 EEMD trials")
+    logger.info("🚀 Starting Complete Model Training for PMC10963254 - US INDEX ONLY")
+    logger.info("🎯 Target: 70% accuracy with unlimited resources and exhaustive optimization")
+    logger.info("⚡ Configuration: 1000 epochs, 500 Bayesian calls, 200 EEMD trials")
     
     try:
         # Import modules
@@ -265,14 +265,15 @@ def run_complete_training():
         return False, {}
 
 if __name__ == "__main__":
-    print("🚀 PMC10963254 Complete Model Training - MAXIMUM ACCURACY OPTIMIZATION")
-    print("This will train and save models for all stock indices with:")
-    print("  • MAXIMUM ACCURACY TARGET: 80%+ (increased from 70%)")
+    print("🚀 PMC10963254 Complete Model Training - US INDEX ONLY (70% Target)")
+    print("This will train and save models for US stock index only with:")
+    print("  • TARGET ACCURACY: 70% (as specified in requirements)")
     print("  • EXTENDED TRAINING: 1000 epochs (increased from 300)")
     print("  • EXHAUSTIVE OPTIMIZATION: 500 Bayesian calls (increased from 200)")
-    print("  • ENHANCED SIGNAL PROCESSING: 500 EEMD trials (increased from 200)")
+    print("  • ENHANCED SIGNAL PROCESSING: 200 EEMD trials")
     print("  • UNLIMITED RESOURCES: All timeouts removed, unlimited execution time")
     print("  • ADVANCED TECHNIQUES: Cosine annealing, warm restarts, ensemble training")
+    print("  • US INDEX ONLY: S&P 500 (^GSPC) data only")
     print("  • COMPREHENSIVE RESULTS: All accuracy metrics saved in project folder")
     print("=" * 80)
     print("⚠️  WARNING: This is resource-intensive training optimized for maximum accuracy!")

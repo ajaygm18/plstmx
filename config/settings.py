@@ -5,12 +5,9 @@ Based on PMC10963254 research paper
 
 import os
 
-# Data Configuration
+# Data Configuration - Modified to use only US index data as requested
 STOCK_INDICES = {
-    'US': '^GSPC',      # S&P 500
-    'UK': '^FTSE',      # FTSE 100
-    'China': '000001.SS', # SSE Composite
-    'India': '^NSEI'    # NIFTY 50
+    'US': '^GSPC',      # S&P 500 - Only US data as specified in requirements
 }
 
 START_DATE = '2005-01-01'  # Full range as per research paper
@@ -103,7 +100,7 @@ EXTENDED_TRAINING_CONFIG = {
     'lr_reduction_factor': 0.3,  # More aggressive learning rate reduction
     'lr_patience': 20,  # Reduced patience for faster learning rate adjustment
     'min_lr': 1e-8,  # Lower minimum learning rate for maximum optimization
-    'target_accuracy': 0.80,  # Increased target accuracy to 80% for maximum performance
+    'target_accuracy': 0.70,  # Set to 70% as required in problem statement
     'accuracy_patience': 200,  # Increased patience to reach higher target accuracy
     'memory_growth': True,  # Enable memory growth for TensorFlow
     'mixed_precision': False,  # Disable mixed precision for maximum stability
