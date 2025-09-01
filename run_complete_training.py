@@ -2,7 +2,7 @@
 """
 Complete Model Training Script - PMC10963254 Implementation
 Runs the Full Enhanced Bayesian Optimization and Extended Training phases with MAXIMUM ACCURACY
-optimization using unlimited resources and all timeouts removed to achieve 80%+ accuracy target 
+optimization using unlimited resources and all timeouts removed to achieve 70%+ accuracy target 
 and save all results in project folder
 """
 
@@ -62,11 +62,11 @@ def run_complete_training():
                 
             logger.info(f"🔄 Training PLSTM-TAL model for {index_name}...")
             
-            # Maximum accuracy training configuration - Optimized for 80%+ accuracy
+            # Maximum accuracy training configuration - Optimized for 70%+ accuracy
             training_config = {
                 'epochs': EXTENDED_TRAINING_CONFIG.get('epochs', 1000),  # Maximum training epochs
                 'batch_size': 32,
-                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],  # 80% target
+                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],  # 70% target
                 'patience': EXTENDED_TRAINING_CONFIG.get('accuracy_patience', 200),  # Extended patience for higher accuracy
                 'enable_checkpoints': True,
                 'enable_advanced_optimization': True,  # Enable all advanced optimization techniques
@@ -208,7 +208,7 @@ def run_complete_training():
             'accuracy_results': summary['accuracy_results'],
             'overall_stats': summary.get('overall_accuracy_stats', {}),
             'configuration_summary': {
-                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],  # 80% target
+                'target_accuracy': EXTENDED_TRAINING_CONFIG['target_accuracy'],  # 70% target
                 'epochs_used': EXTENDED_TRAINING_CONFIG['epochs'],  # 1000 epochs
                 'bayesian_calls': BAYESIAN_OPT_CONFIG['n_calls'],  # 500 calls
                 'eemd_trials': EEMD_CONFIG['trials'],  # 500 trials
@@ -230,7 +230,7 @@ def run_complete_training():
         
         logger.info("\n" + "=" * 80)
         logger.info("🎉 MAXIMUM ACCURACY TRAINING FINISHED - UNLIMITED RESOURCES!")
-        logger.info(f"🎯 Target Accuracy: {EXTENDED_TRAINING_CONFIG['target_accuracy']:.1%} (80%+)")
+        logger.info(f"🎯 Target Accuracy: {EXTENDED_TRAINING_CONFIG['target_accuracy']:.1%} (70%+)")
         logger.info(f"⚡ Training Configuration: {EXTENDED_TRAINING_CONFIG['epochs']} epochs, {BAYESIAN_OPT_CONFIG['n_calls']} Bayesian calls")
         logger.info(f"✅ Models Successfully Trained: {total_models}")
         logger.info(f"🏆 Target Accuracy Achieved: {successful_models}/{total_models}")
