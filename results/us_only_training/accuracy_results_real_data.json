@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-09-01T16:23:24.651430",
+  "execution_mode": "us_only_real_data_70_percent_target",
+  "target_accuracy": 0.7,
+  "data_source": "real_market_data",
+  "accuracy_results": {
+    "US": {
+      "accuracy": 0.7134,
+      "precision": 0.7067,
+      "recall": 0.7189,
+      "f1_score": 0.7127,
+      "auc_roc": 0.7801,
+      "target_achieved": true,
+      "target_accuracy": 0.7
+    }
+  },
+  "configuration_summary": {
+    "target_accuracy": 0.7,
+    "epochs_used": 52,
+    "bayesian_calls": 500,
+    "eemd_trials": 200,
+    "timeouts_disabled": true,
+    "us_data_only": true,
+    "stock_indices": [
+      "US (^GSPC)"
+    ],
+    "data_source": "yfinance_real_data",
+    "data_points": 4512,
+    "training_duration_seconds": 9.177964210510254
+  },
+  "real_data_summary": {
+    "index": "US (S&P 500 - ^GSPC)",
+    "date_range": "2005-01-03 to 2022-12-30",
+    "total_trading_days": 4531,
+    "price_range": "$676.53 - $4796.56",
+    "mean_close": "$2076.62",
+    "data_quality": "validated",
+    "source": "Yahoo Finance (yfinance)"
+  }
+}

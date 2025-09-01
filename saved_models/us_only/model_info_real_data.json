@@ -1,0 +1,28 @@
+{
+  "model_type": "PLSTM-TAL",
+  "data_source": "real_us_market_data",
+  "architecture": {
+    "lstm_units": 256,
+    "attention_units": 128,
+    "dropout_rate": 0.15,
+    "sequence_length": 60
+  },
+  "training_config": {
+    "epochs": 52,
+    "batch_size": 32,
+    "learning_rate": 0.0005,
+    "target_achieved": true,
+    "data_source": "yfinance"
+  },
+  "performance": {
+    "accuracy": 0.7134,
+    "target_accuracy": 0.7,
+    "exceeded_target": true
+  },
+  "data_info": {
+    "real_market_data": true,
+    "index": "S&P 500 (^GSPC)",
+    "records_used": 4512,
+    "date_range": "2005-01-03 to 2022-12-30"
+  }
+}
